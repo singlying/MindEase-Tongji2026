@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户首页 - MindEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="shared-styles-4.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'ease-bg': '#F2F5F3',
+                        'ease-accent': '#7B9E89',
+                        'ease-accent-dark': '#5F7A6A',
+                        'ease-dark': '#2C3E50',
+                        'ease-sand': '#E8E1D9',
+                        'ease-warm': '#C47C6B',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-ease-bg text-ease-dark antialiased min-h-screen overflow-y-auto">
+    <!-- 氛围层 -->
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="relative z-10 p-8 animate-fade-in max-w-[1600px] mx-auto">
+        <!-- 网格布局 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 md:grid-rows-3 gap-6">
+            
+            <!-- 情绪滑块卡片 - 2列2行 -->
+            <div class="md:col-span-2 md:row-span-2 glass-panel rounded-[2rem] p-8 relative overflow-hidden group hover:shadow-xl transition duration-500">
+                <div class="absolute top-0 right-0 p-6 opacity-20 text-9xl group-hover:scale-110 group-hover:rotate-12 transition duration-700">🌿</div>
+                <div class="relative z-10 h-full flex flex-col">
+                    <div class="flex justify-between items-start">
+                        <h2 class="text-2xl font-bold text-ease-dark">此刻心情</h2>
+                        <button class="text-gray-400 hover:text-ease-accent transition"><i class="fas fa-ellipsis-h"></i></button>
+                    </div>
+                    <div class="flex-1 flex flex-col justify-center items-center my-6">
+                        <div class="text-7xl mb-6 animate-float drop-shadow-xl" id="moodEmoji">😌</div>
+                        <div class="text-2xl font-serif font-medium text-ease-accent mb-8" id="moodText">平静 & 放松</div>
+                        <input type="range" min="1" max="5" value="4" class="w-3/4 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-ease-accent shadow-inner" id="moodSlider">
+                        <div class="flex justify-between w-3/4 mt-2 text-xs text-gray-400">
+                            <span>低落</span>
+                            <span>平静</span>
+                            <span>愉悦</span>
+                        </div>
+                    </div>
+                    <button onclick="parent.loadPage('mood-diary_4.html')" class="btn-accent w-full">
+                        <i class="fas fa-pen mr-2"></i>记录详情
+                    </button>
+                </div>
+            </div>
+
+            <!-- AI咨询快捷入口 - 2列2行 -->
+            <div class="md:col-span-2 md:row-span-2 bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-[2rem] p-8 relative shadow-2xl flex flex-col group cursor-pointer overflow-hidden card-hover" onclick="parent.loadPage('ai-chat_4.html')">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
+                <div class="flex justify-between items-center mb-6 z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md">
+                            <i class="fas fa-robot text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold">MindEase AI</h2>
+                            <p class="text-slate-400 text-xs">24h 深度陪伴</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right -rotate-45 group-hover:rotate-0 transition duration-300"></i>
+                </div>
+                <div class="flex-1 flex items-center justify-center relative z-10">
+                    <div class="text-center space-y-2">
+                        <p class="text-2xl font-serif italic">"需要聊聊吗？"</p>
+                        <p class="text-sm text-slate-400">点击此处，即刻开启对话</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 心理测评入口 -->
+            <div class="glass-panel rounded-[2rem] p-6 flex flex-col justify-between hover:-translate-y-1 transition duration-300 cursor-pointer group" onclick="parent.loadPage('assessment_4.html')">
+                <div class="w-12 h-12 bg-ease-warm/10 rounded-full flex items-center justify-center text-ease-warm text-xl mb-2 group-hover:scale-110 transition">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-ease-dark">心理测评</h3>
+                    <p class="text-xs text-gray-500 mt-1">PHQ-9 / GAD-7</p>
+                </div>
+                <div class="progress-bar mt-4">
+                    <div class="progress-fill" style="width: 66%;"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">已完成 2/3 项测评</p>
+            </div>
+
+            <!-- 咨询师推荐入口 - 2列 -->
+            <div class="md:col-span-2 glass-panel rounded-[2rem] p-6 flex items-center gap-6 relative overflow-hidden group cursor-pointer card-hover" onclick="parent.loadPage('counselor-list_4.html')">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-50 rounded-full z-0 transition group-hover:scale-110"></div>
+                <div class="z-10 flex-1">
+                    <span class="badge badge-info mb-2 inline-block">最佳匹配</span>
+                    <h3 class="text-xl font-bold text-ease-dark mt-1">李明 咨询师</h3>
+                    <p class="text-sm text-gray-500 mt-1">CBT 疗法 • 焦虑疏导专家</p>
+                </div>
+                <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop" class="w-20 h-20 rounded-2xl object-cover shadow-md z-10 border-2 border-white group-hover:shadow-lg transition">
+            </div>
+
+            <!-- 冥想时刻 -->
+            <div class="bg-ease-accent text-white rounded-[2rem] p-6 flex flex-col justify-center items-center text-center relative overflow-hidden cursor-pointer hover:shadow-lg hover:shadow-green-200 transition duration-300 card-hover">
+                <div class="w-12 h-12 border-2 border-white rounded-full flex items-center justify-center mb-3 hover:scale-110 transition">
+                    <i class="fas fa-play ml-1"></i>
+                </div>
+                <h3 class="font-serif text-xl font-medium">冥想时刻</h3>
+                <p class="text-xs mt-2 opacity-80">放松身心</p>
+            </div>
+
+            <!-- 7天情绪趋势图 - 4列 -->
+            <div class="md:col-span-4 glass-panel rounded-[2rem] p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-ease-dark">
+                        <i class="fas fa-chart-line mr-2 text-ease-accent"></i>
+                        7天情绪流动
+                    </h3>
+                    <div class="flex items-center gap-2 text-sm text-gray-500">
+                        <span class="w-3 h-3 rounded-full bg-ease-accent"></span>
+                        <span>情绪得分 (0-10)</span>
+                    </div>
+                </div>
+                <div class="h-48">
+                    <canvas id="moodChart"></canvas>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-gray-200">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-ease-accent">7.2</div>
+                        <div class="text-xs text-gray-600 mt-1">平均情绪值</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-ease-accent">85%</div>
+                        <div class="text-xs text-gray-600 mt-1">积极占比</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-ease-accent">7/7</div>
+                        <div class="text-xs text-gray-600 mt-1">连续记录</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 每日建议 - 2列 -->
+            <div class="md:col-span-2 glass-panel rounded-[2rem] p-6">
+                <h3 class="text-lg font-bold text-ease-dark mb-4">
+                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                    每日建议
+                </h3>
+                <ul class="space-y-3 text-sm text-gray-700">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-ease-accent mt-1 mr-2"></i>
+                        <span>尝试10分钟正念冥想，帮助缓解焦虑</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-ease-accent mt-1 mr-2"></i>
+                        <span>保持规律的睡眠时间，改善整体情绪</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle text-ease-accent mt-1 mr-2"></i>
+                        <span>与朋友或家人保持联系，社交支持很重要</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 推荐音乐 - 2列 -->
+            <div class="md:col-span-2 glass-panel rounded-[2rem] p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-ease-dark">
+                        <i class="fas fa-music mr-2 text-ease-accent"></i>
+                        推荐音乐
+                    </h3>
+                    <a href="#" class="text-sm text-ease-accent hover:opacity-80">查看更多</a>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex items-center space-x-4 p-3 rounded-lg hover:bg-white cursor-pointer transition">
+                        <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop" class="w-12 h-12 rounded-lg object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-ease-dark text-sm">平静放松 - 自然之声</h4>
+                            <p class="text-xs text-gray-500 mt-1">舒缓音乐 • 30分钟</p>
+                        </div>
+                        <i class="fas fa-play-circle text-2xl text-ease-accent"></i>
+                    </div>
+                    <div class="flex items-center space-x-4 p-3 rounded-lg hover:bg-white cursor-pointer transition">
+                        <img src="https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=100&h=100&fit=crop" class="w-12 h-12 rounded-lg object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-ease-dark text-sm">冥想音乐合集</h4>
+                            <p class="text-xs text-gray-500 mt-1">疗愈系列 • 12首</p>
+                        </div>
+                        <i class="fas fa-play-circle text-2xl text-ease-accent"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 情绪滑块逻辑
+        const slider = document.getElementById('moodSlider');
+        const emojiDisplay = document.getElementById('moodEmoji');
+        const textDisplay = document.getElementById('moodText');
+        
+        const moodMap = {
+            1: { emoji: '😫', text: '糟糕透了' },
+            2: { emoji: '😔', text: '有些低落' },
+            3: { emoji: '😐', text: '还行吧' },
+            4: { emoji: '😌', text: '平静 & 放松' },
+            5: { emoji: '🤩', text: '超级棒！' }
+        };
+
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            emojiDisplay.style.transform = 'scale(0.5) rotate(-10deg)';
+            emojiDisplay.style.opacity = '0';
+            
+            setTimeout(() => {
+                emojiDisplay.textContent = moodMap[val].emoji;
+                textDisplay.textContent = moodMap[val].text;
+                emojiDisplay.style.transform = 'scale(1) rotate(0deg)';
+                emojiDisplay.style.opacity = '1';
+            }, 150);
+        });
+
+        // 图表初始化
+        window.onload = function() {
+            const ctx = document.getElementById('moodChart');
+            if(ctx) {
+                const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 200);
+                gradient.addColorStop(0, 'rgba(123, 158, 137, 0.6)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['10/21', '10/22', '10/23', '10/24', '10/25', '10/26', '10/27'],
+                        datasets: [{
+                            data: [6.5, 7.0, 6.8, 7.5, 7.8, 7.2, 8.0],
+                            borderColor: '#5F7A6A',
+                            backgroundColor: gradient,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#5F7A6A',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { display: true, grid: { display: false } },
+                            y: { display: false, min: 0, max: 10 }
+                        },
+                        layout: { padding: 0 }
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>

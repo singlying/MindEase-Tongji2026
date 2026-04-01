@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情绪报告 - MindEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="shared-styles-4.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'ease-bg': '#F2F5F3',
+                        'ease-accent': '#7B9E89',
+                        'ease-accent-dark': '#5F7A6A',
+                        'ease-dark': '#2C3E50',
+                        'ease-sand': '#E8E1D9',
+                        'ease-warm': '#C47C6B',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-ease-bg text-ease-dark antialiased min-h-screen overflow-y-auto">
+    <!-- 氛围层 -->
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="relative z-10 p-8 animate-fade-in max-w-7xl mx-auto">
+        <!-- 顶部操作栏 -->
+        <div class="flex justify-between items-center mb-8">
+            <button onclick="parent.loadPage('home_4.html')" class="text-gray-600 hover:text-ease-accent transition flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i>
+                <span>返回首页</span>
+            </button>
+            <div class="flex gap-3">
+                <button class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200 hover:border-ease-accent transition flex items-center gap-2 text-gray-700">
+                    <i class="fas fa-download"></i>
+                    导出报告
+                </button>
+                <button class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200 hover:border-ease-accent transition flex items-center gap-2 text-gray-700">
+                    <i class="fas fa-check-circle"></i>
+                    标记已读
+                </button>
+            </div>
+        </div>
+
+        <!-- 用户信息卡片 -->
+        <div class="glass-panel rounded-[2rem] p-8 mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-6">
+                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-ease-accent to-emerald-600 flex items-center justify-center text-white text-3xl shadow-lg">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-serif font-bold text-ease-dark mb-2">你的情绪健康报告</h1>
+                        <p class="text-gray-600">生成时间：2025年11月23日 18:45</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-gray-500 mb-1">综合评分</div>
+                    <div class="text-4xl font-bold text-ease-accent">7.2</div>
+                    <div class="text-xs text-gray-500">良好状态</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左侧：趋势图表 -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- 7天情绪趋势 -->
+                <div class="glass-panel rounded-[2rem] p-8">
+                    <h3 class="text-xl font-bold text-ease-dark mb-6 flex items-center">
+                        <i class="fas fa-chart-line mr-2 text-ease-accent"></i>
+                        7天情绪趋势
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="emotionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 日记摘录 -->
+                <div class="glass-panel rounded-[2rem] p-8">
+                    <h3 class="text-xl font-bold text-ease-dark mb-6 flex items-center">
+                        <i class="fas fa-book-open mr-2 text-ease-accent"></i>
+                        近期日记摘录
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="bg-white/50 rounded-xl p-5 border border-gray-100">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-4xl">😊</span>
+                                    <div>
+                                        <p class="font-semibold text-ease-dark">11月22日</p>
+                                        <p class="text-xs text-gray-500">情绪得分：8.5</p>
+                                    </div>
+                                </div>
+                                <span class="tag tag-accent text-xs">积极</span>
+                            </div>
+                            <p class="text-gray-700 text-sm leading-relaxed">
+                                今天和朋友们一起去爬山，天气很好，心情也很棒。感觉生活充满了希望，工作上的压力也暂时被抛在脑后了...
+                            </p>
+                        </div>
+
+                        <div class="bg-white/50 rounded-xl p-5 border border-gray-100">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-4xl">😰</span>
+                                    <div>
+                                        <p class="font-semibold text-ease-dark">11月21日</p>
+                                        <p class="text-xs text-gray-500">情绪得分：5.2</p>
+                                    </div>
+                                </div>
+                                <span class="tag tag-warm text-xs">消极</span>
+                            </div>
+                            <p class="text-gray-700 text-sm leading-relaxed">
+                                工作压力有点大，项目截止日期快到了。有些焦虑，但我知道这只是暂时的。深呼吸，一切都会好起来的...
+                            </p>
+                        </div>
+
+                        <div class="bg-white/50 rounded-xl p-5 border border-gray-100">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-4xl">😌</span>
+                                    <div>
+                                        <p class="font-semibold text-ease-dark">11月20日</p>
+                                        <p class="text-xs text-gray-500">情绪得分：7.0</p>
+                                    </div>
+                                </div>
+                                <span class="tag tag-accent text-xs">平静</span>
+                            </div>
+                            <p class="text-gray-700 text-sm leading-relaxed">
+                                今天做了30分钟冥想，感觉内心平静了很多。学会接纳自己的情绪，是很重要的一步...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：统计和建议 -->
+            <div class="space-y-8">
+                <!-- 情绪分布 -->
+                <div class="glass-panel rounded-[2rem] p-6">
+                    <h3 class="text-lg font-bold text-ease-dark mb-4">情绪分布</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700">😊 开心</span>
+                                <span class="font-semibold text-ease-accent">35%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-ease-accent h-2 rounded-full" style="width: 35%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700">😌 平静</span>
+                                <span class="font-semibold text-ease-accent">30%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-ease-accent h-2 rounded-full" style="width: 30%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700">😰 压力大</span>
+                                <span class="font-semibold text-ease-warm">20%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-ease-warm h-2 rounded-full" style="width: 20%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700">😟 焦虑</span>
+                                <span class="font-semibold text-ease-warm">10%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-ease-warm h-2 rounded-full" style="width: 10%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700">😢 难过</span>
+                                <span class="font-semibold text-ease-warm">5%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-ease-warm h-2 rounded-full" style="width: 5%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 关键指标 -->
+                <div class="glass-panel rounded-[2rem] p-6">
+                    <h3 class="text-lg font-bold text-ease-dark mb-4">关键指标</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-ease-accent/10 flex items-center justify-center">
+                                    <i class="fas fa-calendar-check text-ease-accent"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">连续记录</p>
+                                    <p class="font-bold text-ease-dark">7天</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-success text-xs">优秀</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-ease-accent/10 flex items-center justify-center">
+                                    <i class="fas fa-smile text-ease-accent"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">积极情绪</p>
+                                    <p class="font-bold text-ease-dark">65%</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-success text-xs">良好</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-ease-warm/10 flex items-center justify-center">
+                                    <i class="fas fa-moon text-ease-warm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">睡眠质量</p>
+                                    <p class="font-bold text-ease-dark">6.8分</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-warning text-xs">待改善</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI建议 -->
+                <div class="glass-panel rounded-[2rem] p-6">
+                    <h3 class="text-lg font-bold text-ease-dark mb-4 flex items-center">
+                        <i class="fas fa-robot mr-2 text-ease-accent"></i>
+                        AI建议
+                    </h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-check-circle text-ease-accent mt-1"></i>
+                            <p class="text-gray-700">继续保持规律的情绪日记记录习惯</p>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-check-circle text-ease-accent mt-1"></i>
+                            <p class="text-gray-700">建议每天进行10-15分钟正念冥想</p>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-check-circle text-ease-accent mt-1"></i>
+                            <p class="text-gray-700">改善睡眠质量，建立固定作息时间</p>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-lightbulb text-amber-500 mt-1"></i>
+                            <p class="text-gray-700">如压力持续，建议预约专业咨询师</p>
+                        </div>
+                    </div>
+                    <button onclick="parent.loadPage('counselor-list_4.html')" class="btn-accent w-full mt-4 text-sm">
+                        <i class="fas fa-user-doctor mr-2"></i>
+                        查看推荐咨询师
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 情绪趋势图表
+        window.onload = function() {
+            const ctx = document.getElementById('emotionChart');
+            if(ctx) {
+                const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 250);
+                gradient.addColorStop(0, 'rgba(123, 158, 137, 0.6)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['11/17', '11/18', '11/19', '11/20', '11/21', '11/22', '11/23'],
+                        datasets: [{
+                            label: '情绪得分',
+                            data: [6.8, 7.2, 6.5, 7.0, 5.2, 8.5, 7.8],
+                            borderColor: '#5F7A6A',
+                            backgroundColor: gradient,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#5F7A6A',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 3,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return '情绪得分: ' + context.parsed.y + '/10';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                grid: { display: false }
+                            },
+                            y: {
+                                display: true,
+                                min: 0,
+                                max: 10,
+                                ticks: {
+                                    stepSize: 2
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>

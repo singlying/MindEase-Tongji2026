@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindEase | 智能心理支持生态系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared-styles-4.css" />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Outfit", "sans-serif"],
+              serif: ["Playfair Display", "serif"],
+            },
+            colors: {
+              "ease-bg": "#F2F5F3",
+              "ease-accent": "#7B9E89",
+              "ease-accent-dark": "#5F7A6A",
+              "ease-dark": "#2C3E50",
+              "ease-sand": "#E8E1D9",
+              "ease-warm": "#C47C6B",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body
+    class="bg-ease-bg text-ease-dark antialiased overflow-hidden h-screen selection:bg-ease-accent selection:text-white"
+  >
+    <!-- 氛围层 -->
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+
+    <!-- 主布局 -->
+    <div
+      class="relative z-10 flex h-full p-4 md:p-6 gap-6 max-w-[1920px] mx-auto"
+    >
+      <!-- 左侧导航栏 -->
+      <aside
+        class="flex flex-col glass-panel w-24 hover:w-64 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] rounded-[2.5rem] py-8 items-center group z-50 overflow-hidden shadow-xl"
+      >
+        <!-- Logo -->
+        <div class="flex flex-col items-center w-full mb-10 flex-shrink-0">
+          <div
+            class="w-12 h-12 bg-gradient-to-br from-ease-accent to-emerald-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg shadow-green-200/50 mb-2 transition group-hover:scale-110"
+          >
+            <i class="fas fa-brain"></i>
+          </div>
+          <span
+            class="text-lg font-serif font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap delay-75 text-ease-dark"
+            >MindEase</span
+          >
+        </div>
+
+        <!-- 导航按钮 -->
+        <nav class="flex flex-col gap-4 w-full px-3 flex-1">
+          <button
+            onclick="loadPage('home_4.html')"
+            class="nav-item active flex items-center gap-4 p-3.5 rounded-2xl"
+          >
+            <i class="fas fa-home text-xl min-w-[1.5rem] text-center"></i>
+            <span
+              class="font-medium opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity duration-300 delay-75"
+              >用户首页</span
+            >
+          </button>
+
+          <button
+            onclick="loadPage('mood-diary_4.html')"
+            class="nav-item flex items-center gap-4 p-3.5 rounded-2xl"
+          >
+            <i class="fas fa-book-open text-xl min-w-[1.5rem] text-center"></i>
+            <span
+              class="font-medium opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity duration-300 delay-75"
+              >情绪日记</span
+            >
+          </button>
+
+          <button
+            onclick="loadPage('ai-chat_4.html')"
+            class="nav-item flex items-center gap-4 p-3.5 rounded-2xl"
+          >
+            <i class="fas fa-comments text-xl min-w-[1.5rem] text-center"></i>
+            <span
+              class="font-medium opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity duration-300 delay-75"
+              >AI 智能咨询</span
+            >
+          </button>
+
+          <button
+            onclick="loadPage('assessment_4.html')"
+            class="nav-item flex items-center gap-4 p-3.5 rounded-2xl"
+          >
+            <i
+              class="fas fa-clipboard-list text-xl min-w-[1.5rem] text-center"
+            ></i>
+            <span
+              class="font-medium opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity duration-300 delay-75"
+              >心理健康测评</span
+            >
+          </button>
+
+          <button
+            onclick="loadPage('counselor-list_4_modal.html')"
+            class="nav-item flex items-center gap-4 p-3.5 rounded-2xl"
+          >
+            <i
+              class="fas fa-user-doctor text-xl min-w-[1.5rem] text-center"
+            ></i>
+            <span
+              class="font-medium opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity duration-300 delay-75"
+              >咨询师推荐</span
+            >
+          </button>
+
+          <button
+            onclick="loadPage('emotion-report_4.html')"
+            class="nav-item flex items-center gap-4 p-3.5 rounded-2xl"
+          >
+            <i class="fas fa-chart-line text-xl min-w-[1.5rem] text-center"></i>
+            <span
+              class="font-medium opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity duration-300 delay-75"
+              >情绪报告</span
+            >
+          </button>
+        </nav>
+
+        <!-- 用户信息 -->
+        <div
+          class="w-full px-4 flex justify-center group-hover:justify-start mt-auto"
+        >
+          <div
+            onclick="loadPage('profile_4.html')"
+            class="nav-item flex items-center gap-3 p-2 rounded-xl hover:bg-white/40 transition cursor-pointer w-full justify-center group-hover:justify-start"
+          >
+            <img
+              src="https://ui-avatars.com/api/?name=TongJj&background=E8E1D9&color=5F7A6A"
+              class="w-10 h-10 rounded-full border-2 border-white shadow-sm flex-shrink-0"
+            />
+            <div
+              class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75 overflow-hidden"
+            >
+              <span class="text-sm font-bold text-ease-dark whitespace-nowrap"
+                >TongJj</span
+              >
+              <span class="text-xs text-gray-500 whitespace-nowrap"
+                >会员用户</span
+              >
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 右侧主内容区 -->
+      <main class="flex-1 relative min-w-0">
+        <!-- 顶部问候栏 -->
+        <div
+          class="absolute top-0 left-0 right-0 z-40 flex justify-between items-end p-2 mb-4 pointer-events-none"
+        >
+          <div class="pointer-events-auto">
+            <h1 class="font-serif text-4xl text-ease-dark">
+              Good Morning,
+              <span class="italic text-ease-accent-dark">TongJj</span>
+            </h1>
+            <p class="text-gray-500 mt-1 font-light">
+              接纳情绪，是疗愈的开始。
+            </p>
+          </div>
+          <div class="pointer-events-auto flex gap-4">
+            <div
+              class="glass-panel px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium text-gray-600 shadow-sm"
+            >
+              <div
+                class="w-2 h-2 bg-green-400 rounded-full animate-pulse"
+              ></div>
+              系统运行中
+            </div>
+            <button
+              class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-gray-500 hover:bg-white transition shadow-sm relative"
+            >
+              <i class="fas fa-bell"></i>
+              <span
+                class="absolute top-2 right-2 w-2 h-2 bg-red-400 rounded-full"
+              ></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- iframe 内容区 -->
+        <div class="pt-24 h-full">
+          <div class="h-full w-full rounded-[2rem] overflow-hidden">
+            <iframe
+              id="contentFrame"
+              src="home_4.html"
+              class="w-full h-full border-none"
+            ></iframe>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      function loadPage(page) {
+        const iframe = document.getElementById("contentFrame");
+        iframe.src = page;
+
+        // 更新导航状态
+        if (typeof event !== "undefined" && event.currentTarget) {
+          document.querySelectorAll(".nav-item").forEach((item) => {
+            item.classList.remove("active");
+          });
+          event.currentTarget.classList.add("active");
+        }
+      }
+
+      // 使函数在全局可访问
+      window.loadPage = loadPage;
+    </script>
+  </body>
+</html>
