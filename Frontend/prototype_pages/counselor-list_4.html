@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咨询师推荐 - MindEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles-4.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'ease-bg': '#F2F5F3',
+                        'ease-accent': '#7B9E89',
+                        'ease-accent-dark': '#5F7A6A',
+                        'ease-dark': '#2C3E50',
+                        'ease-sand': '#E8E1D9',
+                        'ease-warm': '#C47C6B',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-ease-bg text-ease-dark antialiased min-h-screen overflow-y-auto">
+    <!-- 氛围层 -->
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="relative z-10 p-8 animate-fade-in max-w-[1600px] mx-auto">
+        <!-- 顶部标题和筛选 -->
+        <div class="flex justify-between items-center mb-6 px-2">
+            <h2 class="text-2xl font-serif font-bold text-ease-dark">专家推荐</h2>
+            <div class="flex gap-2">
+                <button class="px-4 py-1.5 rounded-full bg-white/50 border border-white text-sm text-gray-600 hover:bg-white transition">焦虑症</button>
+                <button class="px-4 py-1.5 rounded-full bg-white/50 border border-white text-sm text-gray-600 hover:bg-white transition">抑郁症</button>
+                <button class="px-4 py-1.5 rounded-full bg-ease-accent text-white text-sm shadow-md">全部</button>
+            </div>
+        </div>
+
+        <!-- 筛选栏 -->
+        <div class="glass-card rounded-2xl p-6 mb-8">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center space-x-4 flex-wrap gap-3">
+                    <span class="text-ease-dark font-semibold">
+                        <i class="fas fa-filter mr-2 text-ease-accent"></i>
+                        筛选条件：
+                    </span>
+                    <select class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-ease-accent focus:ring-2 focus:ring-ease-accent/20 transition bg-white text-gray-700 font-medium">
+                        <option>按专长筛选</option>
+                        <option>焦虑症</option>
+                        <option>抑郁症</option>
+                        <option>压力管理</option>
+                        <option>情感问题</option>
+                        <option>学业压力</option>
+                    </select>
+                    <select class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-ease-accent focus:ring-2 focus:ring-ease-accent/20 transition bg-white text-gray-700 font-medium">
+                        <option>按地点筛选</option>
+                        <option>北京</option>
+                        <option>上海</option>
+                        <option>深圳</option>
+                        <option>杭州</option>
+                        <option>成都</option>
+                        <option>全部城市</option>
+                    </select>
+                    <select class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-ease-accent focus:ring-2 focus:ring-ease-accent/20 transition bg-white text-gray-700 font-medium">
+                        <option>按评分排序</option>
+                        <option>评分从高到低</option>
+                        <option>评分从低到高</option>
+                    </select>
+                    <select class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-ease-accent focus:ring-2 focus:ring-ease-accent/20 transition bg-white text-gray-700 font-medium">
+                        <option>按可用性</option>
+                        <option>今天可预约</option>
+                        <option>本周可预约</option>
+                        <option>全部</option>
+                    </select>
+                </div>
+                <button class="px-4 py-2 font-medium text-sm text-ease-accent hover:text-ease-accent-dark hover:bg-ease-accent/10 rounded-xl transition">
+                    <i class="fas fa-rotate-right mr-1"></i>
+                    重置筛选
+                </button>
+            </div>
+        </div>
+
+        <!-- AI推荐提示 -->
+        <div class="glass-card rounded-[2rem] p-6 mb-8">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-ease-accent">
+                    <i class="fas fa-wand-magic-sparkles text-white text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-ease-dark mb-2">智能匹配结果</h3>
+                    <p class="text-gray-700 text-sm leading-relaxed">
+                        根据你近期的情绪日记分析和心理测评结果，我们为你推荐以下5位专业咨询师。他们在<span class="font-semibold text-ease-accent-dark">压力管理、焦虑疏导</span>方面有丰富经验，非常适合你当前的需求。
+                    </p>
+                </div>
+                <button class="text-sm font-medium whitespace-nowrap text-ease-accent hover:text-ease-accent-dark transition">
+                    查看分析详情
+                    <i class="fas fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 咨询师列表 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 咨询师卡片 1 -->
+            <div class="glass-panel rounded-[2rem] p-6 flex gap-6 hover:shadow-xl transition duration-300 hover:-translate-y-1 group border-l-4 border-l-transparent hover:border-l-ease-accent">
+                <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop" class="w-28 h-28 rounded-2xl object-cover shadow-md">
+                    <div class="absolute -bottom-3 -right-3 bg-white px-2 py-1 rounded-lg shadow-sm flex items-center gap-1 border border-gray-100">
+                        <i class="fas fa-star text-yellow-400 text-xs"></i>
+                        <span class="text-xs font-bold text-gray-700">5.0</span>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-ease-dark group-hover:text-ease-accent transition">李明</h3>
+                        <p class="text-sm text-gray-500 mt-1">国家二级心理咨询师 • 10年经验</p>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <span class="tag tag-accent text-xs">CBT疗法</span>
+                            <span class="tag tag-accent text-xs">焦虑疏导</span>
+                            <span class="tag tag-accent text-xs">压力管理</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="badge badge-success text-xs"><div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-2 animate-pulse inline-block"></div> 明日可约</span>
+                        <button onclick="event.stopPropagation(); console.log('按钮被点击'); if(window.parent && window.parent.loadPage) { window.parent.loadPage('booking_4.html'); } else { alert('跳转失败，请检查'); }" class="btn-primary text-sm px-5 py-2">预约详情</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 咨询师卡片 2 -->
+            <div class="glass-panel rounded-[2rem] p-6 flex gap-6 hover:shadow-xl transition duration-300 hover:-translate-y-1 group border-l-4 border-l-transparent hover:border-l-ease-accent">
+                <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=200&h=200&fit=crop" class="w-28 h-28 rounded-2xl object-cover shadow-md">
+                    <div class="absolute -bottom-3 -right-3 bg-white px-2 py-1 rounded-lg shadow-sm flex items-center gap-1 border border-gray-100">
+                        <i class="fas fa-star text-yellow-400 text-xs"></i>
+                        <span class="text-xs font-bold text-gray-700">4.9</span>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-ease-dark group-hover:text-ease-accent transition">王芳</h3>
+                        <p class="text-sm text-gray-500 mt-1">国家二级心理咨询师 • 8年经验</p>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <span class="tag tag-accent text-xs">情绪管理</span>
+                            <span class="tag tag-accent text-xs">家庭关系</span>
+                            <span class="tag tag-accent text-xs">抑郁症</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="badge badge-success text-xs"><div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-2 animate-pulse inline-block"></div> 今日可约</span>
+                        <button onclick="event.stopPropagation(); console.log('按钮被点击-王芳'); if(window.parent && window.parent.loadPage) { window.parent.loadPage('booking_4.html'); } else { alert('跳转失败'); }" class="btn-primary text-sm px-5 py-2">预约详情</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 咨询师卡片 3 -->
+            <div class="glass-panel rounded-[2rem] p-6 flex gap-6 hover:shadow-xl transition duration-300 hover:-translate-y-1 group border-l-4 border-l-transparent hover:border-l-ease-accent">
+                <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200&h=200&fit=crop" class="w-28 h-28 rounded-2xl object-cover shadow-md">
+                    <div class="absolute -bottom-3 -right-3 bg-white px-2 py-1 rounded-lg shadow-sm flex items-center gap-1 border border-gray-100">
+                        <i class="fas fa-star text-yellow-400 text-xs"></i>
+                        <span class="text-xs font-bold text-gray-700">4.8</span>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-ease-dark group-hover:text-ease-accent transition">张伟</h3>
+                        <p class="text-sm text-gray-500 mt-1">国家二级心理咨询师 • 12年经验</p>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <span class="tag tag-accent text-xs">学业压力</span>
+                            <span class="tag tag-accent text-xs">青少年心理</span>
+                            <span class="tag tag-accent text-xs">考试焦虑</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="badge badge-warning text-xs">本周可约</span>
+                        <button onclick="event.stopPropagation(); console.log('按钮被点击-张伟'); if(window.parent && window.parent.loadPage) { window.parent.loadPage('booking_4.html'); } else { alert('跳转失败'); }" class="btn-primary text-sm px-5 py-2">预约详情</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 咨询师卡片 4 -->
+            <div class="glass-panel rounded-[2rem] p-6 flex gap-6 hover:shadow-xl transition duration-300 hover:-translate-y-1 group border-l-4 border-l-transparent hover:border-l-ease-accent">
+                <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop" class="w-28 h-28 rounded-2xl object-cover shadow-md">
+                    <div class="absolute -bottom-3 -right-3 bg-white px-2 py-1 rounded-lg shadow-sm flex items-center gap-1 border border-gray-100">
+                        <i class="fas fa-star text-yellow-400 text-xs"></i>
+                        <span class="text-xs font-bold text-gray-700">4.9</span>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-ease-dark group-hover:text-ease-accent transition">刘静</h3>
+                        <p class="text-sm text-gray-500 mt-1">国家二级心理咨询师 • 9年经验</p>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <span class="tag tag-accent text-xs">婚恋关系</span>
+                            <span class="tag tag-accent text-xs">职场压力</span>
+                            <span class="tag tag-accent text-xs">情感创伤</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="badge badge-success text-xs"><div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-2 animate-pulse inline-block"></div> 今日可约</span>
+                        <button onclick="event.stopPropagation(); console.log('按钮被点击-刘静'); if(window.parent && window.parent.loadPage) { window.parent.loadPage('booking_4.html'); } else { alert('跳转失败'); }" class="btn-primary text-sm px-5 py-2">预约详情</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心理测评 - MindEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles-4.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'ease-bg': '#F2F5F3',
+                        'ease-accent': '#7B9E89',
+                        'ease-accent-dark': '#5F7A6A',
+                        'ease-dark': '#2C3E50',
+                        'ease-sand': '#E8E1D9',
+                        'ease-warm': '#C47C6B',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-ease-bg text-ease-dark antialiased h-screen overflow-hidden">
+    <!-- 氛围层 -->
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="relative z-10 h-full flex flex-col p-8 animate-slide-up">
+        <div class="h-full glass-panel rounded-[2rem] p-8 flex flex-col shadow-xl max-w-5xl mx-auto w-full">
+            <!-- 头部导航 -->
+            <div class="flex justify-between items-center mb-8 flex-shrink-0">
+                <button onclick="parent.loadPage('home_4.html')" class="text-gray-500 hover:text-ease-dark transition flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i> 返回首页
+                </button>
+                <div class="text-center">
+                    <h2 class="text-xl font-bold text-ease-dark">PHQ-9 抑郁症筛查量表</h2>
+                    <p class="text-xs text-gray-500 mt-1">问题 <span id="currentQ">1</span> / 9</p>
+                </div>
+                <button class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="progress-bar mb-10 flex-shrink-0">
+                <div class="progress-fill" id="progressBar" style="width: 11%;"></div>
+            </div>
+
+            <!-- 问题区域 -->
+            <div class="flex-1 flex flex-col justify-center">
+                <div class="max-w-3xl mx-auto w-full">
+                    <h3 class="text-3xl font-serif font-medium text-ease-dark mb-8 leading-snug text-center">
+                        在过去两周内，你有多频繁地感到<br>
+                        <span class="text-ease-warm">做事时提不起劲或没有兴趣</span>？
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div class="option-card bg-white/40 p-4 rounded-xl flex items-center cursor-pointer" onclick="selectOption(this, 0)">
+                            <div class="letter-box w-10 h-10 rounded-lg border-2 border-gray-300 flex items-center justify-center font-bold text-gray-500 transition-all mr-4">A</div>
+                            <span class="text-lg text-gray-700">完全不会</span>
+                        </div>
+                        <div class="option-card bg-white/40 p-4 rounded-xl flex items-center cursor-pointer" onclick="selectOption(this, 1)">
+                            <div class="letter-box w-10 h-10 rounded-lg border-2 border-gray-300 flex items-center justify-center font-bold text-gray-500 transition-all mr-4">B</div>
+                            <span class="text-lg text-gray-700">好几天</span>
+                        </div>
+                        <div class="option-card bg-white/40 p-4 rounded-xl flex items-center cursor-pointer" onclick="selectOption(this, 2)">
+                            <div class="letter-box w-10 h-10 rounded-lg border-2 border-gray-300 flex items-center justify-center font-bold text-gray-500 transition-all mr-4">C</div>
+                            <span class="text-lg text-gray-700">一半以上的天数</span>
+                        </div>
+                        <div class="option-card bg-white/40 p-4 rounded-xl flex items-center cursor-pointer" onclick="selectOption(this, 3)">
+                            <div class="letter-box w-10 h-10 rounded-lg border-2 border-gray-300 flex items-center justify-center font-bold text-gray-500 transition-all mr-4">D</div>
+                            <span class="text-lg text-gray-700">几乎每天</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部导航 -->
+            <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200/50 flex-shrink-0">
+                <button class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition flex items-center gap-2" disabled>
+                    <i class="fas fa-chevron-left"></i> 上一题
+                </button>
+                <div class="flex gap-2">
+                    <div class="w-2 h-2 rounded-full bg-ease-accent"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                    <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                </div>
+                <button class="btn-primary px-6 py-3 flex items-center gap-2" id="nextBtn">
+                    下一题 <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestion = 1;
+        const totalQuestions = 9;
+        
+        const questions = [
+            "在过去两周内，你有多频繁地感到<br><span class='text-ease-warm'>做事时提不起劲或没有兴趣</span>？",
+            "在过去两周内，你有多频繁地感到<br><span class='text-ease-warm'>心情低落、沮丧或绝望</span>？",
+            "在过去两周内，你有多频繁地<br><span class='text-ease-warm'>入睡困难、睡不安稳或睡眠过多</span>？",
+            "在过去两周内，你有多频繁地感到<br><span class='text-ease-warm'>疲倦或没有精力</span>？",
+            "在过去两周内，你有多频繁地<br><span class='text-ease-warm'>食欲不振或吃太多</span>？",
+            "在过去两周内，你有多频繁地感到<br><span class='text-ease-warm'>自己很糟糕或觉得自己很失败</span>？",
+            "在过去两周内，你有多频繁地<br><span class='text-ease-warm'>难以集中注意力</span>？",
+            "在过去两周内，你有多频繁地<br><span class='text-ease-warm'>动作或说话速度缓慢或过于烦躁不安</span>？",
+            "在过去两周内，你有多频繁地<br><span class='text-ease-warm'>有不如死掉或伤害自己的想法</span>？"
+        ];
+
+        function selectOption(element, value) {
+            document.querySelectorAll('.option-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            element.classList.add('selected');
+        }
+
+        document.getElementById('nextBtn').addEventListener('click', function() {
+            if (currentQuestion < totalQuestions) {
+                currentQuestion++;
+                document.getElementById('currentQ').textContent = currentQuestion;
+                document.getElementById('progressBar').style.width = (currentQuestion / totalQuestions * 100) + '%';
+                
+                // 更新问题文本
+                document.querySelector('.text-3xl').innerHTML = questions[currentQuestion - 1];
+                
+                // 清除选中状态
+                document.querySelectorAll('.option-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                // 更新进度点
+                document.querySelectorAll('.flex.gap-2 .w-2').forEach((dot, index) => {
+                    if (index < currentQuestion) {
+                        dot.classList.remove('bg-gray-300');
+                        dot.classList.add('bg-ease-accent');
+                    }
+                });
+                
+                if (currentQuestion === totalQuestions) {
+                    this.innerHTML = '提交测评 <i class="fas fa-check"></i>';
+                }
+            } else {
+                // 提交测评
+                alert('测评已完成！正在分析您的结果...');
+                parent.loadPage('emotion-report_4.html');
+            }
+        });
+    </script>
+</body>
+</html>
