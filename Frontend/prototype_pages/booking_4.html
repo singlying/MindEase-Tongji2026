@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预约咨询 - MindEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles-4.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'ease-bg': '#F2F5F3',
+                        'ease-accent': '#7B9E89',
+                        'ease-accent-dark': '#5F7A6A',
+                        'ease-dark': '#2C3E50',
+                        'ease-sand': '#E8E1D9',
+                        'ease-warm': '#C47C6B',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-ease-bg text-ease-dark antialiased min-h-screen overflow-y-auto">
+    <!-- 氛围层 -->
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="relative z-10 p-8 animate-fade-in max-w-7xl mx-auto">
+        <!-- 返回按钮 -->
+        <button onclick="parent.loadPage('counselor-list_4.html')" class="mb-6 text-gray-600 hover:text-ease-accent transition flex items-center gap-2">
+            <i class="fas fa-arrow-left"></i>
+            <span>返回咨询师列表</span>
+        </button>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左侧：咨询师信息 -->
+            <div class="lg:col-span-1">
+                <div class="glass-panel rounded-[2rem] p-8 sticky top-8">
+                    <div class="text-center mb-6">
+                        <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&h=300&fit=crop" 
+                            class="w-32 h-32 rounded-2xl object-cover mx-auto shadow-lg mb-4 border-4 border-white">
+                        <h2 class="text-2xl font-bold text-ease-dark mb-1">李明</h2>
+                        <p class="text-sm text-gray-500 mb-3">国家二级心理咨询师</p>
+                        <div class="flex items-center justify-center gap-2 mb-4">
+                            <div class="flex text-yellow-400">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-sm text-gray-600">5.0 (328条评价)</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 text-sm">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-briefcase text-ease-accent mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-ease-dark">执业经验</p>
+                                <p class="text-gray-600">10年临床咨询经验</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-graduation-cap text-ease-accent mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-ease-dark">教育背景</p>
+                                <p class="text-gray-600">北京大学心理学硕士</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-heart text-ease-accent mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-ease-dark">擅长领域</p>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    <span class="tag tag-accent text-xs">CBT疗法</span>
+                                    <span class="tag tag-accent text-xs">焦虑疏导</span>
+                                    <span class="tag tag-accent text-xs">压力管理</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-map-marker-alt text-ease-accent mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-ease-dark">咨询地点</p>
+                                <p class="text-gray-600">北京市朝阳区建国路88号</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-dollar-sign text-ease-accent mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-ease-dark">咨询费用</p>
+                                <p class="text-gray-600">¥600/小时（50分钟）</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：预约日历和时间 -->
+            <div class="lg:col-span-2">
+                <div class="glass-panel rounded-[2rem] p-8">
+                    <h3 class="text-2xl font-bold text-ease-dark mb-6">选择预约时间</h3>
+
+                    <!-- 日期选择 -->
+                    <div class="mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold text-ease-dark">选择日期</h4>
+                            <div class="flex gap-2">
+                                <button class="w-8 h-8 rounded-lg hover:bg-white transition flex items-center justify-center text-gray-600">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="px-4 py-1 text-sm font-medium text-gray-700">2025年11月</span>
+                                <button class="w-8 h-8 rounded-lg hover:bg-white transition flex items-center justify-center text-gray-600">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-7 gap-3">
+                            <!-- 星期标题 -->
+                            <div class="text-center text-xs font-medium text-gray-500 py-2">日</div>
+                            <div class="text-center text-xs font-medium text-gray-500 py-2">一</div>
+                            <div class="text-center text-xs font-medium text-gray-500 py-2">二</div>
+                            <div class="text-center text-xs font-medium text-gray-500 py-2">三</div>
+                            <div class="text-center text-xs font-medium text-gray-500 py-2">四</div>
+                            <div class="text-center text-xs font-medium text-gray-500 py-2">五</div>
+                            <div class="text-center text-xs font-medium text-gray-500 py-2">六</div>
+                            
+                            <!-- 日期 -->
+                            <button class="calendar-day" disabled>20</button>
+                            <button class="calendar-day" disabled>21</button>
+                            <button class="calendar-day" disabled>22</button>
+                            <button class="calendar-day">23</button>
+                            <button class="calendar-day active">24</button>
+                            <button class="calendar-day">25</button>
+                            <button class="calendar-day">26</button>
+                            <button class="calendar-day">27</button>
+                            <button class="calendar-day">28</button>
+                            <button class="calendar-day">29</button>
+                            <button class="calendar-day">30</button>
+                            <button class="calendar-day" disabled>1</button>
+                            <button class="calendar-day" disabled>2</button>
+                            <button class="calendar-day" disabled>3</button>
+                        </div>
+                    </div>
+
+                    <!-- 时间段选择 -->
+                    <div class="mb-8">
+                        <h4 class="font-semibold text-ease-dark mb-4">选择时间段</h4>
+                        <div class="space-y-6">
+                            <!-- 上午 -->
+                            <div>
+                                <p class="text-sm text-gray-600 mb-3">
+                                    <i class="fas fa-sun text-yellow-500 mr-2"></i>上午时段
+                                </p>
+                                <div class="grid grid-cols-4 gap-3">
+                                    <button class="time-slot" disabled>08:00</button>
+                                    <button class="time-slot">09:00</button>
+                                    <button class="time-slot">10:00</button>
+                                    <button class="time-slot selected">11:00</button>
+                                </div>
+                            </div>
+                            
+                            <!-- 下午 -->
+                            <div>
+                                <p class="text-sm text-gray-600 mb-3">
+                                    <i class="fas fa-cloud-sun text-orange-400 mr-2"></i>下午时段
+                                </p>
+                                <div class="grid grid-cols-4 gap-3">
+                                    <button class="time-slot">14:00</button>
+                                    <button class="time-slot">15:00</button>
+                                    <button class="time-slot">16:00</button>
+                                    <button class="time-slot" disabled>17:00</button>
+                                </div>
+                            </div>
+                            
+                            <!-- 晚上 -->
+                            <div>
+                                <p class="text-sm text-gray-600 mb-3">
+                                    <i class="fas fa-moon text-indigo-400 mr-2"></i>晚上时段
+                                </p>
+                                <div class="grid grid-cols-4 gap-3">
+                                    <button class="time-slot">18:00</button>
+                                    <button class="time-slot">19:00</button>
+                                    <button class="time-slot">20:00</button>
+                                    <button class="time-slot" disabled>21:00</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 预约信息确认 -->
+                    <div class="bg-ease-sand/30 rounded-2xl p-6 mb-6">
+                        <h4 class="font-semibold text-ease-dark mb-3">预约信息确认</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">咨询师：</span>
+                                <span class="font-medium text-ease-dark">李明</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">预约日期：</span>
+                                <span class="font-medium text-ease-dark">2025年11月24日</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">预约时间：</span>
+                                <span class="font-medium text-ease-dark">11:00 - 11:50</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">咨询费用：</span>
+                                <span class="font-bold text-ease-accent text-lg">¥600</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 备注 -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-ease-dark mb-2">备注信息（可选）</label>
+                        <textarea rows="3" 
+                            class="w-full bg-white/50 border-2 border-gray-200 rounded-xl p-4 focus:ring-2 focus:ring-ease-accent focus:border-ease-accent transition outline-none text-gray-700 placeholder-gray-400 resize-none"
+                            placeholder="请简要描述您希望咨询的问题..."></textarea>
+                    </div>
+
+                    <!-- 提交按钮 -->
+                    <button class="btn-primary w-full text-lg py-4">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        确认预约
+                    </button>
+                    
+                    <p class="text-xs text-gray-500 text-center mt-4">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        预约后我们会通过短信和APP通知您，请保持手机畅通
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 日历日期选择
+        document.querySelectorAll('.calendar-day:not([disabled])').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.calendar-day').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 时间槽选择
+        document.querySelectorAll('.time-slot:not([disabled])').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-slot').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+    </script>
+</body>
+</html>

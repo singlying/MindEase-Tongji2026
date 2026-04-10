@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情绪日记 - MindEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles-4.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'ease-bg': '#F2F5F3',
+                        'ease-accent': '#7B9E89',
+                        'ease-accent-dark': '#5F7A6A',
+                        'ease-dark': '#2C3E50',
+                        'ease-sand': '#E8E1D9',
+                        'ease-warm': '#C47C6B',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .mood-tag {
+            @apply bg-white/40 backdrop-blur-sm rounded-2xl p-4 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-ease-accent hover:bg-white/60 hover:shadow-lg hover:-translate-y-1;
+        }
+        .mood-tag.active {
+            @apply border-ease-accent bg-white shadow-lg;
+        }
+        .mood-icon { transition: transform 0.3s; }
+        .mood-tag:hover .mood-icon { transform: scale(1.1); }
+    </style>
+</head>
+<body class="bg-ease-bg text-ease-dark antialiased min-h-screen overflow-y-auto">
+    <!-- 氛围层 -->
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="relative z-10 animate-fade-in">
+        <div class="max-w-5xl mx-auto px-6 py-8">
+            <!-- 顶部装饰条 -->
+            <div class="w-full h-2 bg-gradient-to-r from-ease-accent to-emerald-600 rounded-full mb-8"></div>
+            
+            <!-- 主卡片 -->
+            <div class="glass-panel rounded-[2rem] p-8 md:p-12 shadow-xl">
+                <!-- 日期显示 -->
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-serif font-bold text-ease-dark" id="currentDate">2025年 11月 23日</h2>
+                        <p class="text-gray-500 mt-1" id="currentDay">星期六 • 下午 6:45</p>
+                    </div>
+                    <button onclick="parent.loadPage('home_4.html')" class="text-sm text-ease-accent hover:text-ease-accent-dark font-medium transition flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/50">
+                        <i class="fas fa-history"></i> 历史记录
+                    </button>
+                </div>
+
+                <!-- 情绪标签选择 -->
+                <div class="mb-8">
+                    <label class="block text-ease-dark font-semibold mb-4 flex items-center text-lg">
+                        <i class="fas fa-face-smile mr-2 text-ease-accent"></i>
+                        今天的心情是？
+                    </label>
+                    <div class="grid grid-cols-5 gap-4">
+                        <button class="mood-tag" data-mood="happy">
+                            <div class="mood-icon text-5xl mb-2">😊</div>
+                            <div class="mood-label text-sm font-medium text-gray-700">开心</div>
+                        </button>
+                        <button class="mood-tag" data-mood="sad">
+                            <div class="mood-icon text-5xl mb-2">😢</div>
+                            <div class="mood-label text-sm font-medium text-gray-700">难过</div>
+                        </button>
+                        <button class="mood-tag" data-mood="stressed">
+                            <div class="mood-icon text-5xl mb-2">😰</div>
+                            <div class="mood-label text-sm font-medium text-gray-700">压力大</div>
+                        </button>
+                        <button class="mood-tag" data-mood="anxious">
+                            <div class="mood-icon text-5xl mb-2">😟</div>
+                            <div class="mood-label text-sm font-medium text-gray-700">焦虑</div>
+                        </button>
+                        <button class="mood-tag" data-mood="calm">
+                            <div class="mood-icon text-5xl mb-2">😌</div>
+                            <div class="mood-label text-sm font-medium text-gray-700">平静</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 文本输入区 -->
+                <div class="mb-8">
+                    <label class="block text-ease-dark font-semibold mb-4 flex items-center text-lg">
+                        <i class="fas fa-pen-fancy mr-2 text-ease-accent"></i>
+                        今天发生了什么？
+                    </label>
+                    <textarea id="diaryContent" rows="10" 
+                        class="w-full bg-white/50 backdrop-blur-sm border-2 border-gray-200 rounded-2xl p-6 focus:ring-2 focus:ring-ease-accent focus:border-ease-accent transition outline-none text-gray-700 placeholder-gray-400 leading-relaxed resize-none hover:bg-white/70"
+                        placeholder="此刻在想些什么？写下来，让情绪流动...&#10;&#10;你可以记录：&#10;• 今天发生的事情&#10;• 内心的感受和想法&#10;• 让你开心或烦恼的事&#10;• 任何想要倾诉的内容"></textarea>
+                </div>
+
+                <!-- AI 分析提示 -->
+                <div class="mb-8 glass-card rounded-2xl p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-ease-accent to-emerald-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-ease-dark mb-1">AI 情绪分析</h4>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                提交后，AI 会自动分析你的情绪状态，帮助你更好地了解自己的内心世界。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 附加选项 -->
+                <div class="mb-8">
+                    <label class="block text-ease-dark font-semibold mb-4 text-lg">附加选项（可选）</label>
+                    <div class="flex flex-wrap gap-4">
+                        <button class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border-2 border-gray-200 hover:border-ease-accent transition flex items-center gap-2 text-gray-700 hover:text-ease-accent">
+                            <i class="fas fa-image"></i>
+                            <span>添加图片</span>
+                        </button>
+                        <button class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border-2 border-gray-200 hover:border-ease-accent transition flex items-center gap-2 text-gray-700 hover:text-ease-accent">
+                            <i class="fas fa-tag"></i>
+                            <span>添加标签</span>
+                        </button>
+                        <button class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border-2 border-gray-200 hover:border-ease-accent transition flex items-center gap-2 text-gray-700 hover:text-ease-accent">
+                            <i class="fas fa-microphone"></i>
+                            <span>语音输入</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 底部操作栏 -->
+                <div class="flex justify-end items-center border-t border-gray-200/50 pt-6 gap-4">
+                    <button class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition">
+                        <i class="fas fa-save mr-2"></i>保存草稿
+                    </button>
+                    <button class="btn-primary flex items-center gap-2">
+                        <i class="fas fa-check"></i> 提交日记
+                    </button>
+                </div>
+            </div>
+
+            <!-- 近期日记预览 -->
+            <div class="mt-8 glass-panel rounded-[2rem] p-8">
+                <h3 class="text-xl font-bold text-ease-dark mb-6 flex items-center">
+                    <i class="fas fa-clock-rotate-left mr-2 text-ease-accent"></i>
+                    近期日记
+                </h3>
+                <div class="space-y-4">
+                    <div class="bg-white/50 rounded-xl p-4 hover:bg-white/70 transition cursor-pointer border border-gray-100">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-sm font-medium text-gray-600">11月22日 星期五</span>
+                            <span class="text-2xl">😊</span>
+                        </div>
+                        <p class="text-sm text-gray-700 line-clamp-2">今天和朋友们一起去爬山，天气很好，心情也很棒。感觉生活充满了希望...</p>
+                    </div>
+                    <div class="bg-white/50 rounded-xl p-4 hover:bg-white/70 transition cursor-pointer border border-gray-100">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-sm font-medium text-gray-600">11月21日 星期四</span>
+                            <span class="text-2xl">😰</span>
+                        </div>
+                        <p class="text-sm text-gray-700 line-clamp-2">工作压力有点大，但我知道这只是暂时的。深呼吸，一切都会好起来的...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 日期时间更新
+        function updateDateTime() {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}年 ${now.getMonth() + 1}月 ${now.getDate()}日`;
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const timeStr = `${days[now.getDay()]} • ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            document.getElementById('currentDate').textContent = dateStr;
+            document.getElementById('currentDay').textContent = timeStr;
+        }
+        updateDateTime();
+
+        // 情绪标签选择
+        document.querySelectorAll('.mood-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                document.querySelectorAll('.mood-tag').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

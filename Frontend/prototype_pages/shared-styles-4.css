@@ -1,0 +1,399 @@
+/* ========================================
+   MindEase V4 - 鼠尾草绿美学风格系统
+   基于 ai_studio_code (2).html
+   ======================================== */
+
+/* ========== CSS变量定义 ========== */
+:root {
+    /* 主色调 - 鼠尾草绿 */
+    --ease-bg: #F2F5F3;
+    --ease-accent: #7B9E89;
+    --ease-accent-dark: #5F7A6A;
+    --ease-accent-light: #9DB8A7;
+    
+    /* 辅助色 */
+    --ease-dark: #2C3E50;
+    --ease-sand: #E8E1D9;
+    --ease-warm: #C47C6B;
+    
+    /* 中性色 */
+    --gray-50: #F8FAFC;
+    --gray-100: #F1F5F9;
+    --gray-200: #E2E8F0;
+    --gray-300: #CBD5E1;
+    --gray-400: #94A3B8;
+    --gray-500: #64748B;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1E293B;
+    --gray-900: #0F172A;
+}
+
+/* ========== 基础动画 ========== */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(10px) scale(0.99); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes slideUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
+}
+
+/* ========== 噪点纹理覆盖层 ========== */
+.noise-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* ========== 浮动彩色圆球 (Orbs) ========== */
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    z-index: -1;
+    opacity: 0.7;
+    animation: blob 10s infinite ease-in-out;
+}
+
+.orb-1 {
+    width: 500px;
+    height: 500px;
+    background: rgba(216, 180, 254, 0.8);
+    top: -10%;
+    left: -10%;
+}
+
+.orb-2 {
+    width: 400px;
+    height: 400px;
+    background: rgba(187, 247, 208, 0.8);
+    top: 30%;
+    right: -10%;
+    animation-delay: 2s;
+}
+
+.orb-3 {
+    width: 400px;
+    height: 400px;
+    background: rgba(191, 219, 254, 0.8);
+    bottom: -10%;
+    left: 20%;
+    animation-delay: 4s;
+}
+
+/* ========== 高级玻璃态效果 ========== */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.60);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.70);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 50px 0 rgba(31, 38, 135, 0.12);
+}
+
+/* ========== 导航项样式 ========== */
+.nav-item {
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    color: var(--gray-500);
+    border: 1px solid transparent;
+}
+
+.nav-item:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.4);
+    color: var(--ease-dark);
+}
+
+.nav-item.active {
+    background: #FFFFFF;
+    color: var(--ease-dark);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 1);
+    transform: scale(1.02);
+}
+
+/* ========== 按钮样式 ========== */
+.btn-primary {
+    background: var(--ease-dark);
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.2);
+}
+
+.btn-primary:hover {
+    background: var(--gray-800);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(44, 62, 80, 0.3);
+}
+
+.btn-accent {
+    background: var(--ease-accent);
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(123, 158, 137, 0.3);
+}
+
+.btn-accent:hover {
+    background: var(--ease-accent-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(123, 158, 137, 0.4);
+}
+
+/* ========== 卡片悬停效果 ========== */
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 测评选项卡片 ========== */
+.option-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.option-card:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.option-card.selected {
+    background-color: #FFF7ED;
+    border-color: var(--ease-warm);
+    box-shadow: 0 4px 12px rgba(196, 124, 107, 0.2);
+}
+
+.option-card.selected .letter-box {
+    background-color: var(--ease-warm);
+    color: white;
+    border-color: var(--ease-warm);
+}
+
+/* ========== 时间槽样式 ========== */
+.time-slot {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 0.75rem;
+    background: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.time-slot:hover:not(:disabled) {
+    border-color: var(--ease-accent);
+    color: var(--ease-accent-dark);
+    background-color: rgba(123, 158, 137, 0.1);
+}
+
+.time-slot.selected {
+    background-color: var(--ease-accent);
+    color: white;
+    border-color: var(--ease-accent);
+    box-shadow: 0 4px 10px rgba(123, 158, 137, 0.3);
+}
+
+.time-slot:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--gray-100);
+}
+
+/* ========== 日历日期样式 ========== */
+.calendar-day {
+    padding: 0.75rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 1rem;
+    background: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.calendar-day:hover:not(:disabled) {
+    border-color: var(--ease-accent);
+    transform: translateY(-2px);
+}
+
+.calendar-day.active {
+    background: var(--ease-accent);
+    color: white;
+    border-color: var(--ease-accent);
+    box-shadow: 0 4px 12px rgba(123, 158, 137, 0.3);
+}
+
+.calendar-day:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ========== 聊天气泡样式 ========== */
+.bubble-ai {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+    border-top-left-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    color: var(--gray-700);
+}
+
+.bubble-user {
+    background: linear-gradient(135deg, var(--ease-accent) 0%, var(--ease-accent-dark) 100%);
+    color: white;
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+    border-top-right-radius: 0.25rem;
+    box-shadow: 0 4px 12px rgba(123, 158, 137, 0.3);
+}
+
+/* ========== 标签样式 ========== */
+.tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.tag-accent {
+    background: rgba(123, 158, 137, 0.1);
+    color: var(--ease-accent-dark);
+}
+
+.tag-warm {
+    background: rgba(196, 124, 107, 0.1);
+    color: var(--ease-warm);
+}
+
+/* ========== 徽章样式 ========== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-success {
+    background: #DCFCE7;
+    color: #15803D;
+}
+
+.badge-warning {
+    background: #FEF3C7;
+    color: #CA8A04;
+}
+
+.badge-info {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+/* ========== 进度条样式 ========== */
+.progress-bar {
+    width: 100%;
+    height: 0.375rem;
+    background: rgba(226, 232, 240, 0.5);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ease-warm) 0%, #E89A7F 100%);
+    border-radius: 9999px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========== 工具类 ========== */
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 延迟动画 */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* 隐藏滚动条 */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* ========== 响应式工具 ========== */
+@media (max-width: 768px) {
+    .glass-panel, .glass-card {
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+    
+    .orb {
+        filter: blur(60px);
+    }
+}

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindEase Meditation | 冥想时刻</title>
+    
+    <!-- 引入资源库 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+    <!-- 配置 Tailwind 主题 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ["Outfit", "sans-serif"],
+                        serif: ["Playfair Display", "serif"],
+                    },
+                    colors: {
+                        "ease-bg": "#F2F5F3",
+                        "ease-accent": "#7B9E89",
+                        "ease-accent-dark": "#5F7A6A",
+                        "ease-accent-light": "#9DB8A7",
+                        "ease-dark": "#2C3E50",
+                        "ease-sand": "#E8E1D9",
+                        "ease-warm": "#C47C6B",
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'breathe': 'breathe 8s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        breathe: {
+                            '0%, 100%': { transform: 'scale(1)', opacity: '0.6' },
+                            '50%': { transform: 'scale(1.5)', opacity: '0.3' },
+                        }
+                    }
+                },
+            },
+        };
+    </script>
+
+    <!-- 自定义样式 -->
+    <style>
+        body {
+            background-color: #F2F5F3;
+            color: #2C3E50;
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0; opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .orb {
+            position: absolute; border-radius: 50%; filter: blur(90px); z-index: -1;
+            animation: float 10s infinite ease-in-out;
+        }
+        .orb-1 { width: 500px; height: 500px; background: rgba(123, 158, 137, 0.4); top: -10%; left: -10%; }
+        .orb-2 { width: 400px; height: 400px; background: rgba(196, 124, 107, 0.2); bottom: -10%; right: -10%; animation-delay: 2s; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        }
+
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        
+        .slide-up-enter-active { transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+        .slide-up-leave-active { transition: all 0.4s ease-in; }
+        .slide-up-enter-from { opacity: 0; transform: translateY(40px); }
+        .slide-up-leave-to { opacity: 0; transform: translateY(-20px); }
+    </style>
+</head>
+<body class="antialiased overflow-hidden h-screen selection:bg-ease-accent selection:text-white">
+
+    <div id="app" class="relative h-full w-full flex flex-col">
+        <div class="noise-overlay"></div>
+        <div class="fixed inset-0 overflow-hidden pointer-events-none">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+        </div>
+
+        <transition name="fade">
+            <header v-if="!isActive" class="relative z-20 flex justify-between items-center p-6 md:p-8">
+                <div class="flex flex-col">
+                    <h1 class="font-serif text-3xl text-ease-dark font-bold tracking-tight">Meditation</h1>
+                    <span class="text-gray-500 text-sm font-medium tracking-wide mt-1">给心灵放个假</span>
+                </div>
+                <button class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-gray-600 hover:bg-white transition">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </header>
+        </transition>
+
+        <main class="flex-1 relative z-10 flex items-center justify-center p-4">
+            
+            <!-- Setup View -->
+            <transition name="slide-up" mode="out-in">
+                <div v-if="!isActive" class="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center" key="setup">
+                    
+                    <!-- 左侧：视觉引导卡片 -->
+                    <div class="relative group cursor-pointer" @click="startSession">
+                        <div class="absolute inset-0 bg-ease-accent/20 blur-2xl rounded-full transform group-hover:scale-105 transition-transform duration-700"></div>
+                        <div class="glass-panel aspect-[4/3] rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden text-center p-8 transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-2xl border-2 border-white/50">
+                            <div class="absolute inset-0 flex items-center justify-center opacity-30">
+                                <div class="w-64 h-64 border border-ease-accent rounded-full animate-[spin_10s_linear_infinite]"></div>
+                                <div class="absolute w-48 h-48 border border-ease-warm/50 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+                            </div>
+
+                            <div class="w-20 h-20 bg-ease-accent rounded-full flex items-center justify-center text-white text-2xl shadow-lg shadow-green-900/10 mb-6 group-hover:scale-110 transition-transform duration-300 z-10">
+                                <i class="fas fa-play pl-1"></i>
+                            </div>
+                            <h2 class="font-serif text-3xl text-ease-dark mb-2 z-10">开始冥想</h2>
+                            <p class="text-gray-500 z-10">点击进入心流状态</p>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：参数选择 (已简化，仅保留时长) -->
+                    <div class="flex flex-col gap-6 h-full justify-center">
+                        <div class="glass-panel p-8 rounded-3xl flex flex-col h-full md:h-auto justify-center">
+                            <h3 class="text-ease-dark font-semibold mb-6 flex items-center gap-2 text-lg">
+                                <i class="far fa-clock text-ease-accent"></i> 选择时长
+                            </h3>
+                            <div class="flex flex-col gap-4">
+                                <button 
+                                    v-for="time in timeOptions" 
+                                    :key="time.value"
+                                    @click="selectedTime = time.value"
+                                    :class="['py-4 px-6 rounded-xl border transition-all duration-300 font-medium text-left flex justify-between items-center group', 
+                                        selectedTime === time.value 
+                                        ? 'bg-ease-accent text-white border-ease-accent shadow-lg shadow-green-900/10' 
+                                        : 'bg-white/50 border-transparent text-gray-600 hover:bg-white']"
+                                >
+                                    <span class="text-lg">{{ time.label }}</span>
+                                    <span :class="['text-sm transition-opacity', selectedTime === time.value ? 'text-white/80' : 'text-gray-400 group-hover:text-gray-500']">{{ time.desc }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Player View -->
+                <div v-else class="absolute inset-0 flex flex-col items-center justify-center" key="player">
+                    
+                    <div class="relative w-96 h-96 flex items-center justify-center mb-12">
+                        <div class="absolute w-64 h-64 bg-ease-accent rounded-full opacity-20 animate-breathe blur-md" :style="{ animationPlayState: isPaused ? 'paused' : 'running' }"></div>
+                        <div class="absolute w-64 h-64 bg-ease-accent rounded-full opacity-10 animate-breathe blur-xl" :style="{ animationPlayState: isPaused ? 'paused' : 'running', animationDelay: '1s' }"></div>
+                        <div class="absolute w-48 h-48 bg-ease-warm rounded-full opacity-10 animate-breathe blur-2xl" :style="{ animationPlayState: isPaused ? 'paused' : 'running', animationDelay: '2s' }"></div>
+                        
+                        <div class="relative z-10 flex flex-col items-center">
+                            <h2 class="font-serif text-6xl md:text-8xl text-ease-dark font-medium tabular-nums tracking-wider drop-shadow-sm">
+                                {{ formattedTime }}
+                            </h2>
+                            <transition name="fade" mode="out-in">
+                                <p :key="breathText" class="text-ease-accent-dark font-medium text-lg mt-4 tracking-[0.2em] uppercase h-8">
+                                    {{ isPaused ? '已暂停' : breathText }}
+                                </p>
+                            </transition>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel px-8 py-4 rounded-full flex items-center gap-8 shadow-xl transform translate-y-8 animate-slide-up">
+                        <button @click="stopSession" class="text-gray-400 hover:text-ease-warm transition-colors p-2" title="结束">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                        
+                        <button @click="toggleTimer" class="w-16 h-16 bg-ease-dark text-white rounded-full flex items-center justify-center hover:bg-gray-800 transition-all shadow-lg hover:scale-105 active:scale-95">
+                            <i :class="['fas', isPaused ? 'fa-play' : 'fa-pause', 'text-2xl']"></i>
+                        </button>
+                        
+                        <!-- 声音开关 (现在连接到真实音频生成器) -->
+                        <button @click="toggleSound" :class="['p-2 transition-colors relative', soundOn ? 'text-ease-accent' : 'text-gray-400']" title="背景白噪音">
+                            <i :class="['fas', soundOn ? 'fa-volume-up' : 'fa-volume-mute', 'text-xl']"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </transition>
+        </main>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onUnmounted } = Vue;
+
+        createApp({
+            setup() {
+                const isActive = ref(false);
+                const isPaused = ref(false);
+                const soundOn = ref(true); // 默认开启
+                const selectedTime = ref(300);
+                const timeLeft = ref(300);
+                const breathText = ref('吸气 Inhale');
+                
+                let timerInterval = null;
+                // 时间同步变量
+                let sessionStartTime = 0;
+                let pauseStartTime = 0;
+
+                // --- 音频引擎 (Web Audio API) ---
+                let audioCtx = null;
+                let gainNode = null;
+                
+                // 初始化音频上下文
+                const initAudio = () => {
+                    if (!audioCtx) {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        audioCtx = new AudioContext();
+                        
+                        // 创建布朗噪音 (比白噪音更柔和，适合冥想)
+                        const bufferSize = audioCtx.sampleRate * 2; // 2秒缓冲
+                        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                        const data = buffer.getChannelData(0);
+                        
+                        let lastOut = 0;
+                        for (let i = 0; i < bufferSize; i++) {
+                            const white = Math.random() * 2 - 1;
+                            // 布朗噪音算法 (积分白噪音)
+                            lastOut = (lastOut + (0.02 * white)) / 1.02;
+                            data[i] = lastOut * 3.5; // 补偿增益
+                        }
+
+                        const noiseSource = audioCtx.createBufferSource();
+                        noiseSource.buffer = buffer;
+                        noiseSource.loop = true;
+                        
+                        // 创建音量控制
+                        gainNode = audioCtx.createGain();
+                        gainNode.gain.value = soundOn.value ? 0.05 : 0; // 初始音量非常低，作为背景
+
+                        // 连接图: Source -> Gain -> Destination
+                        noiseSource.connect(gainNode);
+                        gainNode.connect(audioCtx.destination);
+                        noiseSource.start();
+                    } else if (audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                };
+
+                const updateVolume = () => {
+                    if (!gainNode) return;
+                    // 如果暂停或未开始，使用静态音量；如果正在运行，runBreathCycle 会接管音量
+                    if (!isActive.value || isPaused.value) {
+                         const targetVolume = soundOn.value ? 0.03 : 0;
+                         gainNode.gain.setTargetAtTime(targetVolume, audioCtx.currentTime, 0.5);
+                    }
+                };
+
+                const stopAudio = () => {
+                    if (gainNode) {
+                        // 淡出
+                        gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                        setTimeout(() => {
+                            if (audioCtx) audioCtx.suspend();
+                        }, 200);
+                    }
+                };
+                // --- 音频引擎结束 ---
+
+                const timeOptions = [
+                    { label: '5 Min', value: 300, desc: '快速放松' },
+                    { label: '10 Min', value: 600, desc: '标准正念' },
+                    { label: '20 Min', value: 1200, desc: '深度疗愈' }
+                ];
+
+                const formattedTime = computed(() => {
+                    const m = Math.floor(timeLeft.value / 60);
+                    const s = timeLeft.value % 60;
+                    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                });
+
+                const startSession = () => {
+                    // 用户交互时初始化/恢复音频 (浏览器策略要求)
+                    initAudio();
+                    if (soundOn.value) updateVolume();
+
+                    // 重置状态
+                    timeLeft.value = selectedTime.value;
+                    isActive.value = true;
+                    isPaused.value = false;
+                    
+                    // 记录开始时间 (用于同步动画)
+                    sessionStartTime = Date.now();
+                    
+                    runTimer();
+                    runBreathCycle();
+                };
+
+                const toggleTimer = () => {
+                    isPaused.value = !isPaused.value;
+                    if (isPaused.value) {
+                        clearInterval(timerInterval);
+                        pauseStartTime = Date.now(); // 记录暂停时刻
+                        updateVolume(); // 暂停时重置为平稳音量
+                    } else {
+                        // 恢复时，将暂停的时长从"开始时间"中扣除，相当于把开始时间往后推
+                        // 这样 elapsed 时间就会接上暂停前的值，与 CSS 动画保持同步
+                        const pauseDuration = Date.now() - pauseStartTime;
+                        sessionStartTime += pauseDuration;
+                        runTimer();
+                    }
+                };
+
+                const stopSession = () => {
+                    clearInterval(timerInterval);
+                    isActive.value = false;
+                    isPaused.value = false;
+                    breathText.value = '准备';
+                    stopAudio(); // 停止声音
+                };
+
+                const toggleSound = () => {
+                    soundOn.value = !soundOn.value;
+                    if (isPaused.value || !isActive.value) {
+                        updateVolume();
+                    }
+                };
+
+                const runTimer = () => {
+                    clearInterval(timerInterval);
+                    timerInterval = setInterval(() => {
+                        if (timeLeft.value > 0) {
+                            timeLeft.value--;
+                        } else {
+                            stopSession();
+                        }
+                    }, 1000);
+                };
+
+                const runBreathCycle = () => {
+                    const cycle = () => {
+                        if (!isActive.value) return; 
+                        
+                        if (!isPaused.value) {
+                            const now = Date.now();
+                            // 使用相对于 session 开始的时间，而不是绝对时间
+                            const elapsed = now - sessionStartTime;
+                            const cycleTime = 8000;
+                            const offset = (elapsed % cycleTime) / cycleTime; // 0.0 -> 1.0
+
+                            // 0% -> 50% (前4秒): CSS 动画 scale 1 -> 1.5 (变大) -> 对应吸气
+                            // 50% -> 100% (后4秒): CSS 动画 scale 1.5 -> 1 (变小) -> 对应呼气
+                            if (offset < 0.5) {
+                                breathText.value = "吸气 Inhale";
+                            } else {
+                                breathText.value = "呼气 Exhale";
+                            }
+                            
+                            // --- 动态潮汐音量控制 ---
+                            if (gainNode && soundOn.value) {
+                                // Math.sin(0..PI) 产生 0 -> 1 -> 0 的波形
+                                // 对应 吸气开始(0) -> 吸气顶峰(1) -> 呼气结束(0)
+                                // 这样音量最大时刚好是吸气最满的时候 (圆环最大)
+                                const wave = Math.sin(offset * Math.PI); 
+                                const dynamicVol = 0.03 + (wave * 0.05);
+                                gainNode.gain.setTargetAtTime(dynamicVol, audioCtx.currentTime, 0.05);
+                            } else if (gainNode && !soundOn.value) {
+                                gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                            }
+
+                            requestAnimationFrame(cycle);
+                        } else {
+                            // 暂停时降低刷新率，但仍保持循环以随时恢复
+                            setTimeout(() => requestAnimationFrame(cycle), 500);
+                        }
+                    };
+                    requestAnimationFrame(cycle);
+                };
+
+                onUnmounted(() => {
+                    clearInterval(timerInterval);
+                    if (audioCtx) audioCtx.close();
+                });
+
+                return {
+                    isActive,
+                    isPaused,
+                    soundOn,
+                    selectedTime,
+                    timeLeft,
+                    formattedTime,
+                    timeOptions,
+                    breathText,
+                    startSession,
+                    toggleTimer,
+                    stopSession,
+                    toggleSound
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
