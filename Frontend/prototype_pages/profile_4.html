@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindEase - 个人中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared-styles-4.css" />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Outfit", "sans-serif"],
+              serif: ["Playfair Display", "serif"],
+            },
+            colors: {
+              "ease-bg": "#F2F5F3",
+              "ease-accent": "#7B9E89",
+              "ease-accent-dark": "#5F7A6A",
+              "ease-dark": "#2C3E50",
+              "ease-sand": "#E8E1D9",
+              "ease-warm": "#C47C6B",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      /* 隐藏滚动条但允许滚动 */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-transparent text-ease-dark antialiased p-6 h-full overflow-y-auto no-scrollbar"
+  >
+    <!-- 页面容器 -->
+    <div class="max-w-7xl mx-auto space-y-6 animate-fade-in">
+      <!-- 顶部：个人资料卡片 -->
+      <div
+        class="glass-card rounded-3xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8 relative overflow-hidden"
+      >
+        <!-- 装饰背景 -->
+        <div
+          class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-green-100/50 to-transparent rounded-bl-full pointer-events-none"
+        ></div>
+
+        <!-- 头像区域 -->
+        <div class="relative group">
+          <div
+            class="w-32 h-32 rounded-full p-1 border-2 border-white shadow-lg bg-white/50"
+          >
+            <img
+              src="https://ui-avatars.com/api/?name=TongJj&background=E8E1D9&color=5F7A6A&size=256"
+              alt="Avatar"
+              class="w-full h-full rounded-full object-cover"
+            />
+          </div>
+          <button
+            class="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-md hover:bg-gray-50 transition text-ease-accent-dark"
+            title="更换头像"
+          >
+            <i class="fas fa-camera"></i>
+          </button>
+        </div>
+
+        <!-- 信息区域 -->
+        <div class="flex-1 text-center md:text-left z-10">
+          <div
+            class="flex flex-col md:flex-row md:items-center gap-3 mb-2 justify-center md:justify-start"
+          >
+            <h2 class="text-3xl font-serif font-bold text-ease-dark">TongJj</h2>
+            <span class="badge badge-success"
+              ><i class="fas fa-check-circle mr-1"></i> 状态正常</span
+            >
+            <span class="badge badge-info"
+              ><i class="fas fa-user mr-1"></i> 会员用户</span
+            >
+          </div>
+
+          <p
+            class="text-gray-500 mb-4 flex items-center justify-center md:justify-start gap-2"
+          >
+            <i class="far fa-clock"></i> 注册时间：2023-10-01 12:00:00
+          </p>
+
+          <div class="flex flex-wrap gap-3 justify-center md:justify-start">
+            <button
+              onclick="openEditModal()"
+              class="btn-primary py-2 px-6 text-sm flex items-center gap-2"
+            >
+              <i class="fas fa-pen"></i> 编辑资料
+            </button>
+            <button
+              class="px-6 py-2 rounded-xl border border-gray-300 hover:bg-white/50 transition text-sm font-medium flex items-center gap-2 text-gray-600"
+            >
+              <i class="fas fa-cog"></i> 账号设置
+            </button>
+          </div>
+        </div>
+
+        <!-- 关键指标 -->
+        <div
+          class="flex gap-6 divide-x divide-gray-200/50 z-10 bg-white/40 p-4 rounded-2xl backdrop-blur-sm"
+        >
+          <div class="text-center px-2">
+            <div class="text-xs text-gray-500 mb-1 uppercase tracking-wider">
+              心情均分
+            </div>
+            <div class="text-2xl font-bold text-ease-accent-dark">7.5</div>
+          </div>
+          <div class="text-center px-4">
+            <div class="text-xs text-gray-500 mb-1 uppercase tracking-wider">
+              连续记录
+            </div>
+            <div class="text-2xl font-bold text-ease-warm">
+              12 <span class="text-xs font-normal text-gray-500">天</span>
+            </div>
+          </div>
+          <div class="text-center pl-4">
+            <div class="text-xs text-gray-500 mb-1 uppercase tracking-wider">
+              未读通知
+            </div>
+            <div class="text-2xl font-bold text-blue-600">3</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 下部内容：两列布局 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 左侧：近期预约 (占1列) -->
+        <div
+          class="lg:col-span-1 glass-panel rounded-3xl p-6 flex flex-col h-full"
+        >
+          <div class="flex justify-between items-center mb-6">
+            <h3
+              class="text-xl font-bold text-ease-dark flex items-center gap-2"
+            >
+              <i class="far fa-calendar-alt text-ease-accent"></i> 近期预约
+            </h3>
+            <a href="#" class="text-sm text-ease-accent-dark hover:underline"
+              >查看全部</a
+            >
+          </div>
+
+          <!-- 预约列表 -->
+          <div class="space-y-4 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <!-- Item 1 -->
+            <div
+              class="bg-white/60 p-4 rounded-2xl border border-white hover:shadow-md transition group"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
+                    <img
+                      src="https://ui-avatars.com/api/?name=Li&background=random"
+                      alt="Dr. Li"
+                    />
+                  </div>
+                  <span class="font-bold text-gray-800">李医生</span>
+                </div>
+                <span
+                  class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-lg"
+                  >明日</span
+                >
+              </div>
+              <div class="flex items-center gap-2 text-gray-600 text-sm mb-3">
+                <i class="far fa-clock"></i> 10:00 - 11:00
+              </div>
+              <button
+                class="w-full py-2 rounded-xl bg-ease-bg text-ease-dark text-sm font-medium hover:bg-ease-accent hover:text-white transition"
+              >
+                进入候诊室
+              </button>
+            </div>
+
+            <!-- Empty State (Hidden for demo) -->
+            <!-- 
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="far fa-calendar-times text-4xl mb-2 opacity-50"></i>
+                        <p>暂无预约</p>
+                    </div>
+                    -->
+          </div>
+        </div>
+
+        <!-- 右侧：通知中心 (占2列) -->
+        <div
+          class="lg:col-span-2 glass-panel rounded-3xl p-6 flex flex-col h-full"
+        >
+          <div class="flex justify-between items-center mb-6">
+            <h3
+              class="text-xl font-bold text-ease-dark flex items-center gap-2"
+            >
+              <i class="far fa-bell text-ease-warm"></i> 通知中心
+            </h3>
+            <button
+              class="text-sm text-gray-500 hover:text-ease-dark flex items-center gap-1"
+            >
+              <i class="fas fa-check-double"></i> 全部已读
+            </button>
+          </div>
+
+          <!-- 通知列表 -->
+          <div class="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <!-- Notification Item 1 (Unread) -->
+            <div
+              class="bg-white/80 p-4 rounded-2xl border-l-4 border-l-ease-warm shadow-sm flex gap-4 items-start transition hover:bg-white"
+            >
+              <div
+                class="w-10 h-10 rounded-full bg-red-100 text-ease-warm flex items-center justify-center flex-shrink-0 mt-1"
+              >
+                <i class="fas fa-exclamation"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <h4 class="font-bold text-gray-800">预约提醒</h4>
+                  <span class="text-xs text-gray-400">09:00</span>
+                </div>
+                <p class="text-gray-600 text-sm mt-1">
+                  您的预约将在1小时后开始，请提前做好准备。
+                </p>
+              </div>
+              <button
+                onclick="markAsRead(this)"
+                class="text-gray-400 hover:text-ease-accent transition"
+                title="标记为已读"
+              >
+                <i class="far fa-circle"></i>
+              </button>
+            </div>
+
+            <!-- Notification Item 2 (System) -->
+            <div
+              class="bg-white/60 p-4 rounded-2xl border border-white flex gap-4 items-start transition hover:bg-white"
+            >
+              <div
+                class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 mt-1"
+              >
+                <i class="fas fa-info"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <h4 class="font-bold text-gray-800">系统更新</h4>
+                  <span class="text-xs text-gray-400">昨天</span>
+                </div>
+                <p class="text-gray-600 text-sm mt-1">
+                  MindEase 已更新至 V4.0，新增了 AI 语音咨询功能。
+                </p>
+              </div>
+            </div>
+
+            <!-- Notification Item 3 (Success) -->
+            <div
+              class="bg-white/60 p-4 rounded-2xl border border-white flex gap-4 items-start transition hover:bg-white"
+            >
+              <div
+                class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0 mt-1"
+              >
+                <i class="fas fa-check"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <h4 class="font-bold text-gray-800">测评完成</h4>
+                  <span class="text-xs text-gray-400">2天前</span>
+                </div>
+                <p class="text-gray-600 text-sm mt-1">
+                  您的 GAD-7 焦虑测评报告已生成，点击查看详情。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑资料 Modal -->
+    <div id="editModal" class="fixed inset-0 z-50 hidden">
+      <!-- Backdrop -->
+      <div
+        class="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity opacity-0"
+        id="modalBackdrop"
+      ></div>
+
+      <!-- Modal Content -->
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div
+          class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md transform scale-95 opacity-0 transition-all duration-300 p-6"
+          id="modalPanel"
+        >
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-serif font-bold text-ease-dark">
+              编辑个人资料
+            </h3>
+            <button
+              onclick="closeEditModal()"
+              class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <form
+            onsubmit="event.preventDefault(); saveProfile();"
+            class="space-y-4"
+          >
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >昵称</label
+              >
+              <input
+                type="text"
+                value="TongJj"
+                class="w-full px-4 py-3 rounded-xl bg-gray-50 border-transparent focus:bg-white focus:border-ease-accent focus:ring-0 transition"
+                placeholder="请输入昵称"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >头像链接</label
+              >
+              <input
+                type="text"
+                value="https://example.com/avatar.jpg"
+                class="w-full px-4 py-3 rounded-xl bg-gray-50 border-transparent focus:bg-white focus:border-ease-accent focus:ring-0 transition"
+                placeholder="https://..."
+              />
+            </div>
+
+            <div class="pt-4 flex gap-3">
+              <button
+                type="button"
+                onclick="closeEditModal()"
+                class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                class="flex-1 py-3 rounded-xl bg-ease-dark text-white font-medium hover:bg-gray-800 transition shadow-lg shadow-gray-200"
+              >
+                保存修改
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 标记为已读交互
+      function markAsRead(btn) {
+        // 模拟 API 调用 /user/notification/{id}/read
+        const icon = btn.querySelector("i");
+        icon.classList.remove("far", "fa-circle");
+        icon.classList.add("fas", "fa-check-circle");
+        btn.classList.add("text-green-500");
+        btn.disabled = true;
+
+        // 移除未读样式
+        const card = btn.closest("div.bg-white\\/80");
+        if (card) {
+          card.classList.remove(
+            "bg-white/80",
+            "border-l-4",
+            "border-l-ease-warm"
+          );
+          card.classList.add("bg-white/60", "border", "border-white");
+
+          // 更新顶部未读计数（模拟）
+          const countEl = document.querySelector(".text-blue-600"); // 那个 "3"
+          if (countEl) {
+            let count = parseInt(countEl.innerText);
+            if (count > 0) countEl.innerText = count - 1;
+          }
+        }
+      }
+
+      // Modal Logic
+      const modal = document.getElementById("editModal");
+      const backdrop = document.getElementById("modalBackdrop");
+      const panel = document.getElementById("modalPanel");
+
+      function openEditModal() {
+        modal.classList.remove("hidden");
+        // Trigger reflow
+        void modal.offsetWidth;
+
+        backdrop.classList.remove("opacity-0");
+        panel.classList.remove("scale-95", "opacity-0");
+        panel.classList.add("scale-100", "opacity-100");
+      }
+
+      function closeEditModal() {
+        backdrop.classList.add("opacity-0");
+        panel.classList.remove("scale-100", "opacity-100");
+        panel.classList.add("scale-95", "opacity-0");
+
+        setTimeout(() => {
+          modal.classList.add("hidden");
+        }, 300);
+      }
+
+      function saveProfile() {
+        // 模拟 API 调用 PUT /auth/profile
+        const btn = panel.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fas fa-check"></i> 保存成功';
+          btn.classList.remove("bg-ease-dark");
+          btn.classList.add("bg-green-600");
+
+          setTimeout(() => {
+            closeEditModal();
+            // Reset button after modal closes
+            setTimeout(() => {
+              btn.innerText = originalText;
+              btn.disabled = false;
+              btn.classList.add("bg-ease-dark");
+              btn.classList.remove("bg-green-600");
+
+              // Update nickname on page (Simulated)
+              document.querySelector("h2").innerText =
+                panel.querySelector("input").value;
+            }, 300);
+          }, 800);
+        }, 1000);
+      }
+    </script>
+  </body>
+</html>

@@ -1,39 +1,42 @@
 package com.mindease.service;
 
-import com.mindease.model.entity.User;
-import com.mindease.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Optional;
+import com.mindease.pojo.dto.UserLoginDTO;
+import com.mindease.pojo.dto.UserRegisterDTO;
+import com.mindease.pojo.dto.UserUpdateDTO;
+import com.mindease.pojo.entity.User;
 
-@Service
-@RequiredArgsConstructor
-public class UserService {
-    
-    private final UserRepository userRepository;
-    
-    public List<User> findAll() {
-        return userRepository.findAll();
-    }
-    
-    public Optional<User> findById(Long id) {
-        return userRepository.findById(id);
-    }
-    
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
-    }
-    
-    public User save(User user) {
-        return userRepository.save(user);
-    }
-    
-    public void deleteById(Long id) {
-        userRepository.deleteById(id);
-    }
-    
-    public boolean existsByUsername(String username) {
-        return userRepository.existsByUsername(username);
-    }
+public interface UserService {
+
+    /**
+     * 登录
+     *
+     * @param userLoginDTO
+     * @param needAdmin    是否需要管理员权限
+     * @return
+     */
+    User login(UserLoginDTO userLoginDTO, boolean needAdmin);
+
+    /**
+     * 注册
+     *
+     * @param userRegisterDTO
+     * @return
+     */
+    User register(UserRegisterDTO userRegisterDTO);
+
+    /**
+     * 根据ID查询用户
+     *
+     * @param userId
+     * @return
+     */
+    User getById(Long userId);
+
+    /**
+     * 更新用户信息
+     *
+     * @param userId
+     * @param userUpdateDTO
+     */
+    void updateProfile(Long userId, UserUpdateDTO userUpdateDTO);
 }
