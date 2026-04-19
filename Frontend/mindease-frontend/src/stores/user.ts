@@ -1,59 +1,78 @@
-// 用户状态管理
+// 前端A负责：登录态、角色状态、默认跳转规则
+import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { ref } from "vue";
-import type { UserInfo } from "@/api/auth";
-import { getUserProfile } from "@/api/auth";
+
+export type UserRole = "USER" | "COUNSELOR" | "ADMIN";
+export type CounselorStatus = "PENDING" | "APPROVED";
+
+export interface DemoUserProfile {
+  nickname: string;
+  role: UserRole;
+  counselorStatus?: CounselorStatus;
+}
+
+const TOKEN_KEY = "mindease-demo-token";
+const PROFILE_KEY = "mindease-demo-profile";
+
+function readProfile(): DemoUserProfile | null {
+  const raw = localStorage.getItem(PROFILE_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as DemoUserProfile;
+  } catch {
+    localStorage.removeItem(PROFILE_KEY);
+    return null;
+  }
+}
 
 export const useUserStore = defineStore("user", () => {
-  // 用户信息
-  const userInfo = ref<UserInfo | null>(null);
+  const token = ref(localStorage.getItem(TOKEN_KEY) || "");
+  const profile = ref<DemoUserProfile | null>(readProfile());
 
-  // Token
-  const token = ref<string>(localStorage.getItem("token") || "");
+  const isLoggedIn = computed(() => Boolean(token.value && profile.value));
 
-  // 是否已登录
-  const isLoggedIn = ref<boolean>(!!token.value);
-
-  // 设置 Token
-  const setToken = (newToken: string) => {
-    token.value = newToken;
-    localStorage.setItem("token", newToken);
-    isLoggedIn.value = true;
-  };
-
-  // 设置用户信息
-  const setUserInfo = (info: UserInfo) => {
-    userInfo.value = info;
-  };
-
-  // 获取用户信息
-  const fetchUserInfo = async () => {
-    try {
-      const res = await getUserProfile();
-      const data = (res.data as any).data || res.data;
-      userInfo.value = data;
-      return data;
-    } catch (error) {
-      console.error("获取用户信息失败:", error);
-      throw error;
+  const defaultRoute = computed(() => {
+    if (!profile.value) {
+      return "/login";
     }
-  };
 
-  // 登出
-  const logout = () => {
+    if (profile.value.role === "ADMIN") {
+      return "/admin/dashboard";
+    }
+
+    if (profile.value.role === "COUNSELOR") {
+      return profile.value.counselorStatus === "PENDING"
+        ? "/counselor/audit-pending"
+        : "/counselor/dashboard";
+    }
+
+    return "/home";
+  });
+
+  function login(nextProfile: DemoUserProfile) {
+    token.value = `demo-token-${Date.now()}`;
+    profile.value = nextProfile;
+    localStorage.setItem(TOKEN_KEY, token.value);
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile));
+  }
+
+  function logout() {
     token.value = "";
-    userInfo.value = null;
-    isLoggedIn.value = false;
-    localStorage.removeItem("token");
-  };
+    profile.value = null;
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(PROFILE_KEY);
+  }
 
   return {
-    userInfo,
     token,
+    profile,
     isLoggedIn,
-    setToken,
-    setUserInfo,
-    fetchUserInfo,
+    defaultRoute,
+    login,
     logout,
   };
 });
