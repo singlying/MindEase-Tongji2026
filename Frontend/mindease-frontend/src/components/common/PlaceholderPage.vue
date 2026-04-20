@@ -1,7 +1,7 @@
 <!-- 前端A负责：用户端占位页面基座 -->
 <!-- 前端B负责：医生端 / 管理端页面也复用此占位基座 -->
 <script setup lang="ts">
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 
 interface PageAction {
   label: string;
@@ -16,12 +16,11 @@ const props = withDefaults(
     actions?: PageAction[];
   }>(),
   {
-    description: "当前页面内容暂时留空，后续按 commit 计划逐步迁移旧项目具体实现。",
+    description: "当前页面正在持续完善中，后续会逐步补充更完整的内容与交互。",
     actions: () => [],
   }
 );
 
-const route = useRoute();
 const router = useRouter();
 
 function go(to: string) {
@@ -31,11 +30,6 @@ function go(to: string) {
 
 <template>
   <section class="placeholder glass-card">
-    <div class="label-row">
-      <span class="owner-badge">前端{{ props.owner }}负责</span>
-      <span class="path-text">当前路由：{{ route.path }}</span>
-    </div>
-
     <h2>{{ props.title }}</h2>
     <p>{{ props.description }}</p>
 
@@ -60,29 +54,6 @@ function go(to: string) {
   display: grid;
   align-content: start;
   gap: 16px;
-}
-
-.label-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.owner-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(123, 158, 137, 0.12);
-  color: var(--ease-primary-dark);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.path-text {
-  color: var(--ease-muted);
-  font-size: 13px;
 }
 
 h2 {

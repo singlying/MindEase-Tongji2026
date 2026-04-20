@@ -8,10 +8,9 @@ const router = useRouter();
 <template>
   <div class="auth-page">
     <section class="auth-card glass-card">
-      <div class="tag">前端B负责</div>
-      <h1>注册页占位</h1>
+      <h1>注册</h1>
       <p>
-        当前只保留页面入口与后续职责说明。正式的多角色注册、咨询师资质上传与字段校验会按计划分批迁移。
+        当前已开放页面入口，多角色注册与咨询师资质资料完善正在持续开发中。
       </p>
 
       <div class="action-row">
@@ -34,16 +33,6 @@ const router = useRouter();
   padding: 32px;
   display: grid;
   gap: 18px;
-}
-
-.tag {
-  display: inline-flex;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(196, 124, 107, 0.14);
-  color: #9a5e52;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 h1,

@@ -15,7 +15,7 @@ const form = reactive<{
   role: UserRole;
   counselorStatus: CounselorStatus;
 }>({
-  nickname: "MindEase 演示用户",
+  nickname: "MindEase 体验用户",
   role: "USER",
   counselorStatus: "APPROVED",
 });
@@ -27,7 +27,7 @@ function submitLogin() {
     counselorStatus: form.role === "COUNSELOR" ? form.counselorStatus : undefined,
   });
 
-  ElMessage.success("演示登录成功，正在跳转。");
+  ElMessage.success("登录成功，正在跳转。");
   router.push(userStore.defaultRoute);
 }
 
@@ -36,12 +36,12 @@ function quickLogin(role: UserRole, counselorStatus: CounselorStatus = "APPROVED
   form.counselorStatus = counselorStatus;
   form.nickname =
     role === "USER"
-      ? "用户端演示账号"
+      ? "用户端体验账号"
       : role === "COUNSELOR"
         ? counselorStatus === "PENDING"
           ? "待审核咨询师"
-          : "咨询师演示账号"
-        : "管理员演示账号";
+          : "咨询师体验账号"
+        : "管理员体验账号";
 
   submitLogin();
 }
@@ -51,15 +51,14 @@ function quickLogin(role: UserRole, counselorStatus: CounselorStatus = "APPROVED
   <div class="auth-page">
     <section class="auth-card glass-card">
       <div class="auth-intro">
-        <div class="tag">前端A负责</div>
-        <h1>MindEase 前端骨架</h1>
+        <h1>欢迎来到 MindEase</h1>
         <p>
-          暂时无后端，当前登录页使用演示登录方式，仅跑通页面跳转链路。
+          当前版本支持快速进入不同角色页面，便于体验系统的主要功能入口。
         </p>
       </div>
 
       <el-form label-position="top" class="auth-form">
-        <el-form-item label="演示昵称">
+        <el-form-item label="昵称">
           <el-input v-model="form.nickname" placeholder="请输入显示昵称" />
         </el-form-item>
 
@@ -85,7 +84,7 @@ function quickLogin(role: UserRole, counselorStatus: CounselorStatus = "APPROVED
       </el-form>
 
       <div class="quick-actions">
-        <span>快捷体验：</span>
+        <span>快速进入：</span>
         <el-button plain @click="quickLogin('USER')">用户端</el-button>
         <el-button plain @click="quickLogin('COUNSELOR', 'APPROVED')">咨询师端</el-button>
         <el-button plain @click="quickLogin('COUNSELOR', 'PENDING')">待审核咨询师</el-button>
@@ -110,18 +109,8 @@ function quickLogin(role: UserRole, counselorStatus: CounselorStatus = "APPROVED
   gap: 24px;
 }
 
-.tag {
-  display: inline-flex;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(123, 158, 137, 0.12);
-  color: var(--ease-primary-dark);
-  font-size: 13px;
-  font-weight: 700;
-}
-
 h1 {
-  margin: 12px 0 8px;
+  margin: 0 0 8px;
 }
 
 p {
