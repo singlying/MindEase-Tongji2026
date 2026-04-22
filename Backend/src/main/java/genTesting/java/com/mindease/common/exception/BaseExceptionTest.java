@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 业务异常基类单元测试
+ * 业务异常基类测试
  */
 class BaseExceptionTest {
 
@@ -18,6 +18,7 @@ class BaseExceptionTest {
     @Test
     void testMessageConstructor() {
         String message = "test error message";
+        // 测试带消息的构造函数
         BaseException exception = new BaseException(message);
         assertEquals(message, exception.getMessage());
     }
@@ -37,6 +38,7 @@ class BaseExceptionTest {
     @Test
     void testInheritanceFromRuntimeException() {
         BaseException exception = new BaseException();
+        // 测试BaseException是否是RuntimeException的子类
         assertTrue(exception instanceof RuntimeException);
     }
 }
