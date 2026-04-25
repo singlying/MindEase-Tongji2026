@@ -3,7 +3,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 import type { UserRole } from "@/stores/user";
-import { useUserStore } from "@/stores/user";
+import { isPendingCounselor, useUserStore } from "@/stores/user";
 
 declare module "vue-router" {
   interface RouteMeta {
@@ -145,9 +145,11 @@ const router = createRouter({
   ],
 });
 
+const PUBLIC_PATHS = ["/login", "/register"];
+
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore();
-  const isPublicPage = to.path === "/login" || to.path === "/register";
+  const isPublicPage = PUBLIC_PATHS.includes(to.path);
 
   if (!isPublicPage && !userStore.isLoggedIn) {
     next("/login");
@@ -164,16 +166,22 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (
-    userStore.profile?.role === "COUNSELOR" &&
-    userStore.profile.counselorStatus === "PENDING"
-  ) {
+  if (isPendingCounselor(userStore.profile)) {
     const allowedPaths = ["/counselor/audit-pending", "/profile"];
 
     if (!allowedPaths.includes(to.path) && !isPublicPage) {
       next("/counselor/audit-pending");
       return;
     }
+  }
+
+  if (
+    to.path === "/counselor/audit-pending" &&
+    userStore.profile?.role === "COUNSELOR" &&
+    !isPendingCounselor(userStore.profile)
+  ) {
+    next("/counselor/dashboard");
+    return;
   }
 
   if (to.meta.role && userStore.profile?.role !== to.meta.role) {

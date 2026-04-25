@@ -6,45 +6,12 @@ import { useRoute, useRouter } from "vue-router";
 
 import { useUserStore } from "@/stores/user";
 
-interface MenuItem {
-  label: string;
-  path: string;
-}
-
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 
 const pageTitle = computed(() => route.meta.title || "MindEase");
-
-const menuItems = computed<MenuItem[]>(() => {
-  if (!userStore.profile) {
-    return [];
-  }
-
-  if (userStore.profile.role === "ADMIN") {
-    return [{ label: "管理员工作台", path: "/admin/dashboard" }];
-  }
-
-  if (userStore.profile.role === "COUNSELOR") {
-    if (userStore.profile.counselorStatus === "PENDING") {
-      return [{ label: "资质审核", path: "/counselor/audit-pending" }];
-    }
-
-    return [{ label: "咨询师工作台", path: "/counselor/dashboard" }];
-  }
-
-  return [
-    { label: "首页", path: "/home" },
-    { label: "情绪日记", path: "/mood-diary" },
-    { label: "AI 咨询", path: "/ai-chat" },
-    { label: "心理测评", path: "/assessment" },
-    { label: "咨询师推荐", path: "/counselor-list" },
-    { label: "我的预约", path: "/my-appointments" },
-    { label: "情绪报告", path: "/emotion-report" },
-    { label: "冥想时刻", path: "/meditation" },
-  ];
-});
+const menuItems = computed(() => userStore.navigationItems);
 
 function goProfile() {
   router.push("/profile");
@@ -81,17 +48,7 @@ function handleLogout() {
       <div class="sidebar-footer">
         <div class="user-panel">
           <strong>{{ userStore.profile?.nickname }}</strong>
-          <span>
-            {{
-              userStore.profile?.role === "USER"
-                ? "用户端"
-                : userStore.profile?.role === "COUNSELOR"
-                  ? userStore.profile?.counselorStatus === "PENDING"
-                    ? "咨询师待审核"
-                    : "咨询师端"
-                  : "管理员端"
-            }}
-          </span>
+          <span>{{ userStore.roleLabel }}</span>
         </div>
         <div class="footer-actions">
           <el-button plain @click="goProfile">个人中心</el-button>
