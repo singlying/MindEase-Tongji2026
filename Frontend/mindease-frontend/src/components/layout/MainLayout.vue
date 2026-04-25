@@ -61,7 +61,7 @@ function handleLogout() {
     <aside class="sidebar glass-card">
       <div>
         <div class="brand">MindEase</div>
-        <div class="owner-tag">共享骨架统一由前端A提交</div>
+        <div class="owner-tag">智能心理支持与咨询平台</div>
       </div>
 
       <el-menu
@@ -105,7 +105,7 @@ function handleLogout() {
         <div>
           <div class="topbar-title">{{ pageTitle }}</div>
           <div class="topbar-subtitle">
-            当前阶段先保证工程可运行与路由联通，具体页面内容后续逐步迁移。
+            关注情绪变化，逐步建立更稳定的自我支持节奏。
           </div>
         </div>
       </header>
