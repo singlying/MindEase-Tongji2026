@@ -303,7 +303,6 @@ class HealthChecker:
 
     def check_disk_space(self, path: str = ".") -> Tuple[HealthStatus, str, dict]:
         """检查磁盘空间"""
-        import shutil
         try:
             usage = shutil.disk_usage(path)
             total_gb = usage.total / (1024 ** 3)
@@ -320,11 +319,9 @@ class HealthChecker:
             return (
                 status,
                 f"{free_gb:.1f}GB 可用 / {total_gb:.1f}GB 总计 ({used_pct:.1f}% 已用)",
-                {"total_gb": round(total_gb, 2), "free_gb": round(free_gb, 2),
+                {"total_gb": round(total_gb, 2), "free_gb": round(freegb, 2),
                  "used_pct": round(used_pct, 1)},
             )
-        except Exception as e:
-            return HealthStatus.UNKNOWN, f"磁盘检查异常: {str(e)[:80]}", {}
         except NameError:
             import shutil
             return self.check_disk_space(path)  # 重试
@@ -339,8 +336,7 @@ class HealthChecker:
             req = urllib.request.Request(f"{self.base_url}/actuator/info",
                                          method="GET")
             with urllib.request.urlopen(req, timeout=3) as resp:
-                body = json.loads(resp.read().decode())
-                return HealthStatus.HEALTHY, "Actuator 可达", {"info": str(body)[:200]}
+                return HealthStatus.HEALTHY, "Actuator 可达", {}
         except Exception:
             pass
 
@@ -351,97 +347,10 @@ class HealthChecker:
             pids = result.stdout.strip().split('\n')
             pids = [p for p in pids if p]
             if pids:
-                # 尝试获取JVM内存使用情况
-                mem_info = ""
-                for pid in pids[:3]:  # 最多检查前3个进程
-                    try:
-                        mem_result = subprocess.run(
-                            ["ps", "-o", "rss=", "-p", pid],
-                            capture_output=True, text=True, timeout=3
-                        )
-                        rss_kb = int(mem_result.stdout.strip()) if mem_result.stdout.strip() else 0
-                        rss_mb = rss_kb / 1024
-                        mem_info += f" PID{pid[:6]}={rss_mb:.0f}MB"
-                    except Exception:
-                        pass
-                return HealthStatus.HEALTHY, f"Java 进程运行中 ({mem_info})", {"pids": len(pids)}
+                return HealthStatus.HEALTHY, f"Java 进程运行中 (PID: {pids[0][:8]}...)", {}
             return HealthStatus.DEGRADED, "未检测到 Java 进程", {}
         except Exception:
             return HealthStatus.UNKNOWN, "无法检查 JVM 进程", {}
-
-    def check_log_files(self, log_dir: str = "../logs") -> Tuple[HealthStatus, str, dict]:
-        """检查日志文件大小，防止磁盘被日志占满"""
-        log_path = Path(log_dir)
-        if not log_path.exists():
-            return HealthStatus.UNKNOWN, f"日志目录不存在: {log_dir}", {}
-
-        total_size = 0
-        file_count = 0
-        large_files = []
-        for log_file in list(log_path.rglob("*.log")) + list(log_path.rglob("*.gz")):
-            size = log_file.stat().st_size
-            total_size += size
-            file_count += 1
-            if size > 100 * 1024 * 1024:  # > 100MB
-                large_files.append(f"{log_file.name}: {size / 1024 / 1024:.1f}MB")
-
-        total_mb = total_size / 1024 / 1024
-
-        if total_mb > 500:  # 超过500MB
-            status = HealthStatus.UNHEALTHY
-        elif total_mb > 200 or large_files:
-            status = HealthStatus.DEGRADED
-        else:
-            status = HealthStatus.HEALTHY
-
-        detail_msg = f"{file_count} 个文件, 总计 {total_mb:.1f}MB"
-        if large_files:
-            detail_msg += f"; 大文件: {', '.join(large_files[:2])}"
-
-        return (
-            status,
-            detail_msg,
-            {"total_mb": round(total_mb, 2), "file_count": file_count,
-             "large_files": len(large_files)},
-        )
-
-    def check_connection_pool(self) -> Tuple[HealthStatus, str, dict]:
-        """通过 Actuator 检查数据库连接池状态（需要 Spring Boot Actuator）"""
-        try:
-            import urllib.request
-            req = urllib.request.Request(f"{self.base_url}/actuator/health",
-                                        method="GET",
-                                        headers={"Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                body = json.loads(resp.read().decode())
-
-                # 检查各组件状态
-                components = body.get("components", {})
-                db_status = components.get("db", {}).get("status", "unknown")
-                disk_status = components.get("diskSpace", {}).get("status", "unknown")
-
-                all_healthy = all(
-                    c.get("status") == "UP" for c in components.values()
-                    if isinstance(c, dict)
-                ) if components else None
-
-                if all_healthy is True:
-                    return (
-                        HealthStatus.HEALTHY,
-                        f"所有组件健康 (DB={db_status}, Disk={disk_status})",
-                        {"components": list(components.keys()), "detail": str(body)[:300]},
-                    )
-                elif db_status == "UP":
-                    return HealthStatus.DEGRADED, f"DB正常但部分组件异常: {body}", {}
-                else:
-                    return HealthStatus.UNHEALTHY, f"组件异常: {body}", {}
-
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return HealthStatus.UNKNOWN, "Actuator endpoint 未启用 (404)", {}
-            return HealthStatus.DEGRADED, f"Actuator 返回 HTTP {e.code}", {}
-        except Exception as e:
-            return HealthStatus.UNKNOWN, "无法访问 Actuator 健康端点", {}
 
     # --------------------------------------------------------
     # Fallback 方法 (当缺少 Python 库时使用 CLI 工具)
@@ -524,13 +433,6 @@ class HealthChecker:
             self._check("AI Service (DashScope)", self.check_ai_service)
             self._check("Disk Space", lambda: self.check_disk_space("."))
             self._check("JVM Process", self.check_jvm_memory)
-
-            print(f"\n{'─'*70}")
-            print(" 🔍 运维诊断 (新增)")
-            print(f"{'─'*70}")
-
-            self._check("Connection Pool (Actuator)", self.check_connection_pool)
-            self._check("Log Files", lambda: self.check_log_files("../logs"))
 
         # 输出结果
         self.report.finished_at = datetime.now().isoformat()

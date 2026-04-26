@@ -105,14 +105,6 @@ API_ENDPOINTS = {
                  "desc": "通知列表"},
         "read": {"method": "PUT", "path": "/api/notifications/{id}/read",
                  "desc": "标记已读"},
-        "unread_count": {"method": "GET", "path": "/api/notifications/unread/count",
-                         "desc": "未读通知数"},
-    },
-    "dashboard": {
-        "stats": {"method": "GET", "path": "/api/dashboard/stats",
-                  "desc": "仪表盘统计"},
-        "trend": {"method": "GET", "path": "/api/dashboard/mood-trend",
-                  "desc": "心情趋势"},
     },
 }
 
@@ -490,108 +482,8 @@ class APITester:
         self._log(f"\n  [AI模块完成] 耗时 {total:.0f}ms")
 
     # --------------------------------------------------------
-    # 通知模块测试 (新增)
+    # 评估模块测试
     # --------------------------------------------------------
-
-    def test_notification_module(self):
-        """通知模块测试"""
-        self._log(f"\n{'='*50}")
-        self._log("[模块] 通知 (Notification)", Colors.BOLD)
-        self._log(f"{'='*50}")
-
-        if not self.token:
-            self._record_result("notification", "获取通知列表", TestResult.SKIP, "无有效 Token")
-            return
-
-        start = time.time()
-
-        # TC-NOTIF-01: 获取通知列表
-        t = time.time()
-        code, body = self._request("GET", "/api/notifications?page=1&size=10")
-        elapsed = (time.time() - t) * 1000
-        if code == 200:
-            count = len(body.get("data", [])) if isinstance(body, dict) else "?"
-            self._record_result("notification", "通知列表", TestResult.PASS,
-                                f"返回 {count} 条通知", elapsed)
-        else:
-            self._record_result("notification", "通知列表", TestResult.FAIL,
-                                f"code={code}", elapsed)
-
-        # TC-NOTIF-02: 未读通知数
-        t = time.time()
-        code, body = self._request("GET", "/api/notifications/unread/count")
-        elapsed = (time.time() - t) * 1000
-        if code == 200:
-            unread = body.get("data", body.get("count", "?"))
-            self._record_result("notification", "未读通知数", TestResult.PASS,
-                                f"未读: {unread} 条", elapsed)
-        elif code == 404:
-            self._record_result("notification", "未读通知数", TestResult.SKIP,
-                                "接口可能未实现 (404)", elapsed)
-        else:
-            self._record_result("notification", "未读通知数", TestResult.SKIP,
-                                f"code={code}", elapsed)
-
-        # TC-NOTIF-03: 标记已读
-        t = time.time()
-        # 尝试标记第一条通知为已读（假设ID=1存在）
-        code, body = self._request("PUT", "/api/notifications/1/read")
-        elapsed = (time.time() - t) * 1000
-        if code in (200, 404):  # 200=成功, 404=不存在但接口可达
-            self._record_result("notification", "标记已读", TestResult.PASS, duration_ms=elapsed)
-        else:
-            self._record_result("notification", "标记已读", TestResult.SKIP,
-                                f"code={code}", elapsed)
-
-        total = (time.time() - start) * 1000
-        self._log(f"\n  [通知模块完成] 耗时 {total:.0f}ms")
-
-    # --------------------------------------------------------
-    # 仪表盘模块测试 (新增)
-    # --------------------------------------------------------
-
-    def test_dashboard_module(self):
-        """仪表盘统计测试"""
-        self._log(f"\n{'='*50}")
-        self._log("[模块] 仪表盘 (Dashboard)", Colors.BOLD)
-        self._log(f"{'='*50}")
-
-        if not self.token:
-            self._record_result("dashboard", "统计数据", TestResult.SKIP, "无有效 Token")
-            return
-
-        start = time.time()
-
-        # TC-DASH-01: 统计数据概览
-        t = time.time()
-        code, body = self._request("GET", "/api/dashboard/stats")
-        elapsed = (time.time() - t) * 1000
-        if code == 200:
-            keys = list(body.keys())[:5] if isinstance(body, dict) else []
-            self._record_result("dashboard", "统计数据", TestResult.PASS,
-                                f"字段: {', '.join(keys)}...", elapsed)
-        elif code == 404:
-            self._record_result("dashboard", "统计数据", TestResult.SKIP,
-                                "接口可能未实现 (404)", elapsed)
-        else:
-            self._record_result("dashboard", "统计数据", TestResult.SKIP,
-                                f"code={code}", elapsed)
-
-        # TC-DASH-02: 心情趋势
-        t = time.time()
-        code, body = self._request("GET", "/api/dashboard/mood-trend?days=30")
-        elapsed = (time.time() - t) * 1000
-        if code == 200:
-            self._record_result("dashboard", "心情趋势", TestResult.PASS, duration_ms=elapsed)
-        elif code == 404:
-            self._record_result("dashboard", "心情趋势", TestResult.SKIP,
-                                "接口可能未实现 (404)", elapsed)
-        else:
-            self._record_result("dashboard", "心情趋势", TestResult.SKIP,
-                                f"code={code}", elapsed)
-
-        total = (time.time() - start) * 1000
-        self._log(f"\n  [仪表盘模块完成] 耗时 {total:.0f}ms")
 
     def test_assessment_module(self):
         """评估模块测试"""
@@ -843,8 +735,6 @@ class APITester:
             "counselor": self.test_counselor_module,
             "ai": self.test_ai_module,
             "assessment": self.test_assessment_module,
-            "notification": self.test_notification_module,
-            "dashboard": self.test_dashboard_module,
             "error": self.test_error_scenarios,
         }
 
@@ -891,8 +781,7 @@ def main():
     parser.add_argument("--url", "-u", default="http://localhost:8080",
                         help="服务地址 (默认: http://localhost:8080)")
     parser.add_argument("--module", "-m", nargs="+",
-                        choices=["auth", "user", "counselor", "ai", "assessment",
-                                 "notification", "dashboard", "error"],
+                        choices=["auth", "user", "counselor", "ai", "assessment", "error"],
                         help="指定测试模块 (默认: 全部)")
     parser.add_argument("--timeout", "-t", type=int, default=10,
                         help="请求超时秒数 (默认: 10)")
