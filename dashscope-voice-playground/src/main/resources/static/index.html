@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DashScope Voice Playground</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">DS</div>
+        <div>
+          <h1>DashScope Voice Playground</h1>
+          <p>独立语音输入与对话测试</p>
+        </div>
+      </div>
+
+      <section class="card">
+        <h2>接口状态</h2>
+        <ul class="status-list">
+          <li><span>后端服务</span><strong id="backendStatus">检测中</strong></li>
+          <li><span>浏览器语音识别</span><strong id="recognitionStatus">检测中</strong></li>
+          <li><span>持续语音会话</span><strong id="sessionStatus">未开启</strong></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>附件预览</h2>
+        <label class="upload-box" for="imageInput">
+          <span>上传图片附件</span>
+          <small>仅本地预览，不参与模型理解</small>
+        </label>
+        <input id="imageInput" type="file" accept="image/*" hidden />
+        <div id="imagePreview" class="image-preview empty">暂无图片</div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="hero">
+        <p class="eyebrow">Real DashScope</p>
+        <h2>语音输入、对话与朗读联调页</h2>
+        <p id="hint" class="hint">这里会直接走 DashScope 的 ASR、Chat 和 TTS，适合单独排查语音链路。</p>
+      </header>
+
+      <section id="messages" class="messages"></section>
+
+      <section class="composer">
+        <textarea id="messageInput" rows="3" placeholder="在这里输入内容，或者通过下方按钮录音后转写..."></textarea>
+        <div class="actions">
+          <div class="action-group">
+            <button id="sendButton" class="primary">发送</button>
+            <button id="asrButton" class="secondary">语音输入</button>
+            <button id="oneShotVoiceButton" class="secondary">直接语音对话</button>
+            <button id="conversationButton" class="secondary">开启持续语音会话</button>
+            <button id="stopButton" class="ghost">停止</button>
+          </div>
+          <div class="action-group">
+            <button id="speakLastButton" class="ghost">朗读最后回复</button>
+            <label class="toggle">
+              <input id="autoSpeakToggle" type="checkbox" checked />
+              <span>自动朗读</span>
+            </label>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="messageTemplate">
+    <article class="message">
+      <div class="avatar"></div>
+      <div class="content-wrap">
+        <div class="meta">
+          <span class="sender"></span>
+          <span class="time"></span>
+        </div>
+        <div class="bubble"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>

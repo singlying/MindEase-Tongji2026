@@ -1,0 +1,18 @@
+server:
+  port: 8091
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+playground:
+  dashscope:
+    api-key: ${DASHSCOPE_API_KEY:}
+    chat-model: qwen-max
+    asr-model: paraformer-v2
+    tts-model: sambert-zhichu-v1
+    tts-voice: longxiaochun
+    tts-sample-rate: 22050
+    tts-format: mp3
