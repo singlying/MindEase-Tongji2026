@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.mindease.mapper.ChatSessionMapper">
+    
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chat_session (session_id, user_id, session_title, create_time)
+        VALUES (#{sessionId}, #{userId}, #{sessionTitle}, #{createTime})
+    </insert>
+    
+    <select id="selectBySessionId" resultType="com.mindease.pojo.entity.ChatSession">
+        SELECT id, session_id, user_id, session_title, create_time
+        FROM chat_session
+        WHERE session_id = #{sessionId}
+    </select>
+    
+    <select id="selectByUserId" resultType="com.mindease.pojo.entity.ChatSession">
+        SELECT id, session_id, user_id, session_title, create_time
+        FROM chat_session
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+    
+    <select id="countByUserId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM chat_session
+        WHERE user_id = #{userId}
+    </select>
+    
+    <update id="updateTitle">
+        UPDATE chat_session
+        SET session_title = #{title}
+        WHERE session_id = #{sessionId}
+    </update>
+    
+    <delete id="deleteBySessionId">
+        DELETE FROM chat_session
+        WHERE session_id = #{sessionId}
+    </delete>
+    
+</mapper>
