@@ -352,7 +352,7 @@
                             <div class="text-sm text-gray-700">2025年11月24日 11:00</div>
                             <div class="text-2xl font-bold text-ease-accent mt-1">¥600</div>
                         </div>
-                        <button class="btn-primary px-8 py-3 flex items-center gap-2">
+                        <button onclick="showDemoToast('预约已确认，稍后将发送提醒')" class="btn-primary px-8 py-3 flex items-center gap-2">
                             确认预约 <i class="fas fa-arrow-right"></i>
                         </button>
                     </div>
@@ -394,6 +394,22 @@
                 });
             });
         });
+
+        function showDemoToast(message) {
+            let toast = document.getElementById('demoToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'demoToast';
+                toast.className = 'fixed top-8 right-8 z-[60] bg-ease-dark text-white px-5 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 translate-y-2';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                closeBookingModal();
+            }, 1400);
+        }
     </script>
 </body>
 </html>
