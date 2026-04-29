@@ -62,7 +62,7 @@
                         <h2 class="text-3xl font-serif font-bold text-ease-dark" id="currentDate">2025年 11月 23日</h2>
                         <p class="text-gray-500 mt-1" id="currentDay">星期六 • 下午 6:45</p>
                     </div>
-                    <button onclick="parent.loadPage('home_4.html')" class="text-sm text-ease-accent hover:text-ease-accent-dark font-medium transition flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/50">
+                    <button onclick="document.getElementById('recentDiaries').scrollIntoView({ behavior: 'smooth', block: 'start' })" class="text-sm text-ease-accent hover:text-ease-accent-dark font-medium transition flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/50">
                         <i class="fas fa-history"></i> 历史记录
                     </button>
                 </div>
@@ -144,17 +144,17 @@
 
                 <!-- 底部操作栏 -->
                 <div class="flex justify-end items-center border-t border-gray-200/50 pt-6 gap-4">
-                    <button class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition">
+                    <button onclick="showDemoToast('草稿已保存')" class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition">
                         <i class="fas fa-save mr-2"></i>保存草稿
                     </button>
-                    <button class="btn-primary flex items-center gap-2">
+                    <button onclick="showDemoToast('日记已提交，情绪分析已更新')" class="btn-primary flex items-center gap-2">
                         <i class="fas fa-check"></i> 提交日记
                     </button>
                 </div>
             </div>
 
             <!-- 近期日记预览 -->
-            <div class="mt-8 glass-panel rounded-[2rem] p-8">
+            <div id="recentDiaries" class="mt-8 glass-panel rounded-[2rem] p-8">
                 <h3 class="text-xl font-bold text-ease-dark mb-6 flex items-center">
                     <i class="fas fa-clock-rotate-left mr-2 text-ease-accent"></i>
                     近期日记
@@ -199,6 +199,21 @@
                 this.classList.add('active');
             });
         });
+
+        function showDemoToast(message) {
+            let toast = document.getElementById('demoToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'demoToast';
+                toast.className = 'fixed top-8 right-8 z-50 bg-ease-dark text-white px-5 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 translate-y-2';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 1800);
+        }
     </script>
 </body>
 </html>

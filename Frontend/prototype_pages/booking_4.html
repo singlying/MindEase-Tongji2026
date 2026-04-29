@@ -41,7 +41,7 @@
     <!-- 主内容 -->
     <div class="relative z-10 p-8 animate-fade-in max-w-7xl mx-auto">
         <!-- 返回按钮 -->
-        <button onclick="parent.loadPage('counselor-list_4.html')" class="mb-6 text-gray-600 hover:text-ease-accent transition flex items-center gap-2">
+        <button onclick="parent.loadPage('counselor-list_4_modal.html')" class="mb-6 text-gray-600 hover:text-ease-accent transition flex items-center gap-2">
             <i class="fas fa-arrow-left"></i>
             <span>返回咨询师列表</span>
         </button>
@@ -236,7 +236,7 @@
                     </div>
 
                     <!-- 提交按钮 -->
-                    <button class="btn-primary w-full text-lg py-4">
+                    <button onclick="showDemoToast('预约已确认，提醒已发送')" class="btn-primary w-full text-lg py-4">
                         <i class="fas fa-check-circle mr-2"></i>
                         确认预约
                     </button>
@@ -266,6 +266,21 @@
                 this.classList.add('selected');
             });
         });
+
+        function showDemoToast(message) {
+            let toast = document.getElementById('demoToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'demoToast';
+                toast.className = 'fixed top-8 right-8 z-50 bg-ease-dark text-white px-5 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 translate-y-2';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 1800);
+        }
     </script>
 </body>
 </html>
