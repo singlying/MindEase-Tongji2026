@@ -35,4 +35,22 @@ public interface SysNotificationMapper {
 
     @Update("UPDATE sys_notification SET is_read = 1, read_time = NOW() WHERE user_id = #{userId} AND is_read = 0")
     int markAllAsReadByUserId(@Param("userId") Long userId);
+
+    /**
+     * 批量删除已过期的通知
+     */
+    @Delete("DELETE FROM sys_notification WHERE expire_at IS NOT NULL AND expire_at < NOW()")
+    int deleteExpiredNotifications();
+
+    /**
+     * 批量标记已读
+     */
+    int markBatchRead(@Param("userId") Long userId, @Param("ids") List<Long> ids);
+
+    /**
+     * 按类型分组统计未读数
+     */
+    @Select("SELECT type, COUNT(*) AS cnt FROM sys_notification " +
+            "WHERE user_id = #{userId} AND is_read = 0 GROUP BY type")
+    List<Map<String, Object>> countUnreadGroupByType(@Param("userId") Long userId);
 }

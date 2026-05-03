@@ -54,4 +54,18 @@ public interface CommunityPostMapper {
      * 查询热门话题及帖子数量（按标签聚合）
      */
     List<Map<String, Object>> queryHotTopics(@Param("limit") int limit);
+
+    @Update("UPDATE community_post SET collect_count = collect_count + 1, update_time = NOW() WHERE id = #{id}")
+    void incrementCollectCount(Long id);
+
+    @Update("UPDATE community_post SET collect_count = GREATEST(collect_count - 1, 0), update_time = NOW() WHERE id = #{id}")
+    void decrementCollectCount(Long id);
+
+    @Update("UPDATE community_post SET is_pinned = #{pinned}, update_time = NOW() WHERE id = #{id}")
+    void togglePin(@Param("id") Long id, @Param("pinned") Boolean pinned);
+
+    /**
+     * 查询置顶帖子列表
+     */
+    List<CommunityPost> selectPinnedPosts(@Param("limit") int limit);
 }

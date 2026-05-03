@@ -20,6 +20,8 @@ public class GoalDetailVO {
     private LocalDate targetDate;
     private String status;         // ACTIVE/COMPLETED/PAUSED/CANCELLED
     private Double progress;       // 0.0 - 100.0
+    private Integer priority;      // 目标优先级 1-高 2-中 3-低
+    private String difficulty;     // 难度: easy/medium/hard
     private Integer currentStreak;
     private Integer longestStreak;
     private Integer totalCheckIns;

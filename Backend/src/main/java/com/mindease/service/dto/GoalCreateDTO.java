@@ -15,4 +15,7 @@ public class GoalCreateDTO {
     private LocalDate targetDate;
     private String frequency;      // daily/weekly/monthly/custom
     private LocalTime reminderTime;
+    private Integer priority;      // 优先级 1-高 2-中 3-低
+    private String difficulty;     // 难度: easy/medium/hard
+    private List<String> tags;     // 自定义标签
 }

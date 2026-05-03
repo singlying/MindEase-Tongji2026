@@ -21,6 +21,8 @@ public class Goal {
     private Integer currentStreak;    // 当前连续天数
     private Integer longestStreak;    // 历史最长连续天数
     private Integer totalCheckIns;    // 累计打卡次数
+    private Integer priority;         // 优先级 1-高 2-中 3-低
+    private String difficulty;        // 难度等级: easy/medium/hard
     private String aiSuggestion;      // AI生成的建议（首次创建时生成）
     private LocalTime reminderTime;   // 每日提醒时间
 

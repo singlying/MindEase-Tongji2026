@@ -19,6 +19,8 @@ public class ReminderTask {
     private String message;            // 提醒内容模板
     private String status;             // ACTIVE/PAUSED/CANCELLED/COMPLETED
     private LocalDateTime nextExecuteAt;  // 下次执行时间
+    private LocalDateTime lastExecutedAt; // 上次实际执行时间
+    private Integer executeCount;       // 累计执行次数
 
     private LocalDateTime cancelTime;
     private LocalDateTime createTime;
