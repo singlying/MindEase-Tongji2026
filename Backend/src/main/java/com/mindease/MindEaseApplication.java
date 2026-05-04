@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MindeaseApplication {
+public class MindEaseApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MindeaseApplication.class, args);
+        SpringApplication.run(MindEaseApplication.class, args);
     }
 
 }
