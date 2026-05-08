@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mindease.mapper.AssessmentAnswerMapper">
+
+    <!-- 批量插入答案 -->
+    <insert id="batchInsert">
+        INSERT INTO assessment_answer (record_id, question_id, score, answer_text)
+        VALUES
+        <foreach collection="answers" item="answer" separator=",">
+            (#{answer.recordId}, #{answer.questionId}, #{answer.score}, #{answer.answerText})
+        </foreach>
+    </insert>
+
+</mapper>
+
