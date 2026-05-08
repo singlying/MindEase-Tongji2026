@@ -1,37 +1,51 @@
+spring:
+  profiles:
+    active: dev
+  main:
+    allow-circular-references: true
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${SPRING_DATASOURCE_HOST:localhost}:${SPRING_DATASOURCE_PORT:3306}/${SPRING_DATASOURCE_DATABASE:mindease}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  servlet:
+    multipart:
+      max-file-size: 10MB
+
 server:
   port: 8080
 
-spring:
-  application:
-    name: mindease-backend
-  
-  # MySQL Configuration
-  datasource:
-    url: jdbc:mysql://${SPRING_DATASOURCE_URL:mindease-mysql:3306/mindease}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:root}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  
-  # JPA Configuration
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
-  
-  # Redis Configuration
-  data:
-    redis:
-      host: ${SPRING_DATA_REDIS_HOST:mindease-redis}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
-      database: 0
-      timeout: 3000ms
+mybatis:
+  configuration:
+    #开启驼峰命名
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:mapper/*.xml
 
-# Logging
-logging:
-  level:
-    com.mindease: debug
-    org.hibernate.SQL: debug
+mindease:
+  jwt:
+    secret-key: ${MINDEASE_JWT_SECRET_KEY:}
+    ttl: 7200000
+  security:
+    aes-key: ${MINDEASE_SECURITY_AES_KEY:}
+
+langchain4j:
+  community:
+    dashscope:
+      chat-model:
+        model-name: qwen-max
+        api-key: ${DASHSCOPE_API_KEY:}
+      streaming-chat-model:
+        model-name: qwen-max
+        api-key: ${DASHSCOPE_API_KEY:}
+      embedding-model:
+        model-name: text-embedding-v3
+        api-key: ${DASHSCOPE_API_KEY:}
+
+    redis:
+      host: localhost
+      port: 6379
+

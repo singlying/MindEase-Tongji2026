@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mindease.mapper.AssessmentQuestionMapper">
+
+    <!-- 批量查询题目 -->
+    <select id="listByIds" resultType="com.mindease.pojo.entity.AssessmentQuestion">
+        SELECT * FROM assessment_question
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY sort_order, id
+    </select>
+
+</mapper>
+

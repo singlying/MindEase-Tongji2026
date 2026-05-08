@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mindease.mapper.MoodLogMapper">
+    
+    <!-- MoodLog 加密字段映射 -->
+    <resultMap id="MoodLogEncryptedResultMap" type="com.mindease.pojo.entity.MoodLog">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="moodType" column="mood_type"/>
+        <result property="moodScore" column="mood_score"/>
+        <!-- 加密字段：使用自定义TypeHandler -->
+        <result property="content" column="content" typeHandler="com.mindease.common.handler.EncryptedStringTypeHandler"/>
+        <result property="tags" column="tags" typeHandler="com.mindease.common.handler.EncryptedStringTypeHandler"/>
+        <result property="aiAnalysis" column="ai_analysis" typeHandler="com.mindease.common.handler.EncryptedStringTypeHandler"/>
+        <result property="logDate" column="log_date"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+    
+    <!-- 情绪类型统计结果映射 -->
+    <resultMap id="MoodTypeCountResultMap" type="com.mindease.mapper.MoodLogMapper$MoodTypeCount">
+        <result property="moodType" column="mood_type"/>
+        <result property="count" column="count"/>
+    </resultMap>
+    
+    <!-- 统计用户情绪类型分布 -->
+    <select id="getMoodTypeDistribution" resultMap="MoodTypeCountResultMap">
+        select mood_type, count(*) as count 
+        from mood_log 
+        where user_id = #{userId} 
+        group by mood_type
+    </select>
+    
+</mapper>
