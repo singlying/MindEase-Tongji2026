@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能咨询 - MindEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared-styles-4.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'ease-bg': '#F2F5F3',
+                        'ease-accent': '#7B9E89',
+                        'ease-accent-dark': '#5F7A6A',
+                        'ease-dark': '#2C3E50',
+                        'ease-sand': '#E8E1D9',
+                        'ease-warm': '#C47C6B',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-ease-bg text-ease-dark antialiased h-screen overflow-hidden">
+    <!-- 氛围层 -->
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="relative z-10 h-full flex flex-col animate-fade-in p-8">
+        <div class="h-full flex flex-col glass-panel rounded-[2rem] overflow-hidden shadow-xl">
+            <!-- 头部 -->
+            <div class="h-16 bg-white/30 backdrop-blur-md border-b border-white/50 flex items-center justify-between px-8 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                    <div>
+                        <h3 class="font-bold text-ease-dark">MindEase AI</h3>
+                        <p class="text-xs text-gray-500">深度共情模式 • 在线</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="parent.loadPage('home_4.html')" class="w-8 h-8 rounded-full hover:bg-gray-100 text-gray-500 hover:text-ease-accent transition flex items-center justify-center">
+                        <i class="fas fa-home"></i>
+                    </button>
+                    <button class="w-8 h-8 rounded-full hover:bg-red-50 hover:text-red-500 text-gray-400 transition flex items-center justify-center">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 免责声明 -->
+            <div class="bg-amber-50/80 backdrop-blur-sm border-l-4 border-amber-400 p-4 mx-8 mt-6 rounded-xl">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-info-circle text-amber-600 mt-1"></i>
+                    <div class="text-sm text-amber-800">
+                        <p class="font-semibold mb-1">温馨提示</p>
+                        <p>MindEase AI 旨在提供情绪支持和倾听，但不能替代专业心理咨询。如遇紧急情况，请拨打24小时心理危机热线：<strong>400-161-9995</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 聊天内容区 -->
+            <div class="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar" id="chat-container">
+                <!-- AI 消息 -->
+                <div class="flex gap-4 items-start max-w-[80%] animate-slide-up">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-ease-accent to-emerald-600 flex items-center justify-center text-white shadow-md flex-shrink-0 mt-1">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-xs text-gray-400 ml-1">MindEase AI</span>
+                        <div class="bubble-ai">
+                            你好，TongJj。这里是一个没有评判的空间。如果你感到焦虑或困惑，可以随时告诉我，我会一直在这里倾听。
+                        </div>
+                        <span class="text-xs text-gray-400 ml-1">刚刚</span>
+                    </div>
+                </div>
+
+                <!-- 用户消息示例 -->
+                <div class="flex gap-4 items-start max-w-[80%] ml-auto animate-slide-up delay-100">
+                    <div class="space-y-1 flex-1 flex flex-col items-end">
+                        <span class="text-xs text-gray-400 mr-1">我</span>
+                        <div class="bubble-user">
+                            最近感觉压力很大，工作和学习都让我喘不过气来。有时候会失眠，不知道该怎么办。
+                        </div>
+                        <span class="text-xs text-gray-400 mr-1">2分钟前</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-ease-warm flex items-center justify-center text-white shadow-md flex-shrink-0 mt-1">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+
+                <!-- AI 回复 -->
+                <div class="flex gap-4 items-start max-w-[80%] animate-slide-up delay-200">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-ease-accent to-emerald-600 flex items-center justify-center text-white shadow-md flex-shrink-0 mt-1">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <span class="text-xs text-gray-400 ml-1">MindEase AI</span>
+                        <div class="bubble-ai">
+                            我理解你现在的感受。压力和失眠确实会让人感到很疲惫。让我们一起来看看有什么可以帮助你的：
+                            <br><br>
+                            <strong>1. 建立睡前放松习惯</strong><br>
+                            • 睡前1小时停止使用电子设备<br>
+                            • 尝试冥想或深呼吸练习<br>
+                            • 保持规律的作息时间<br><br>
+                            <strong>2. 分解压力源</strong><br>
+                            • 把大任务分成小步骤<br>
+                            • 列出优先级清单<br>
+                            • 适当说"不"，保护个人时间<br><br>
+                            你觉得从哪一点开始尝试会比较容易呢？
+                        </div>
+                        <span class="text-xs text-gray-400 ml-1">刚刚</span>
+                    </div>
+                </div>
+
+                <!-- 快捷回复建议 -->
+                <div class="flex flex-wrap gap-2 justify-center animate-fade-in delay-300">
+                    <button class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full text-sm text-gray-700 hover:bg-white hover:text-ease-accent transition border border-gray-200">
+                        我想了解更多关于冥想的方法
+                    </button>
+                    <button class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full text-sm text-gray-700 hover:bg-white hover:text-ease-accent transition border border-gray-200">
+                        如何处理工作压力？
+                    </button>
+                    <button class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full text-sm text-gray-700 hover:bg-white hover:text-ease-accent transition border border-gray-200">
+                        需要专业咨询师帮助
+                    </button>
+                </div>
+            </div>
+
+            <!-- 输入框 -->
+            <div class="p-6 bg-white/40 backdrop-blur-xl border-t border-white/60 flex-shrink-0">
+                <div class="relative group">
+                    <input type="text" placeholder="在此输入你的想法..." 
+                        class="w-full bg-white/70 border border-white rounded-2xl py-4 pl-6 pr-14 focus:ring-2 focus:ring-ease-accent/30 focus:border-ease-accent transition outline-none text-gray-700 placeholder-gray-400 shadow-sm">
+                    <button class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-ease-accent text-white rounded-xl flex items-center justify-center hover:bg-ease-accent-dark transition shadow-md">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="flex items-center justify-between mt-3 px-2">
+                    <div class="flex gap-3">
+                        <button class="text-gray-400 hover:text-ease-accent transition text-sm">
+                            <i class="fas fa-image mr-1"></i> 图片
+                        </button>
+                        <button class="text-gray-400 hover:text-ease-accent transition text-sm">
+                            <i class="fas fa-microphone mr-1"></i> 语音
+                        </button>
+                    </div>
+                    <span class="text-xs text-gray-400">按 Enter 发送</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
