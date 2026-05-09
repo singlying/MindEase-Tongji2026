@@ -31,6 +31,12 @@ mindease:
     ttl: 7200000
   security:
     aes-key: ${MINDEASE_SECURITY_AES_KEY:}
+  speech:
+    asr-model: ${MINDEASE_SPEECH_ASR_MODEL:paraformer-v2}
+    tts-model: ${MINDEASE_SPEECH_TTS_MODEL:sambert-zhichu-v1}
+    tts-voice: ${MINDEASE_SPEECH_TTS_VOICE:longxiaochun}
+    tts-format: ${MINDEASE_SPEECH_TTS_FORMAT:mp3}
+    tts-sample-rate: ${MINDEASE_SPEECH_TTS_SAMPLE_RATE:22050}
 
 langchain4j:
   community:

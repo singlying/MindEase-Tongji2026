@@ -2,15 +2,23 @@ package com.mindease.controller.ai;
 
 import com.mindease.common.result.Result;
 import com.mindease.pojo.dto.ChatMessageSendDTO;
+import com.mindease.pojo.dto.SpeechSynthesisDTO;
 import com.mindease.pojo.vo.ChatHistoryVO;
 import com.mindease.pojo.vo.ChatSessionCreateVO;
 import com.mindease.pojo.vo.ChatSessionListVO;
 import com.mindease.pojo.vo.ChatDeleteVO;
+import com.mindease.pojo.vo.SpeechTranscriptionVO;
 import com.mindease.pojo.vo.SensitiveWordCheckVO;
 import com.mindease.service.ChatService;
+import com.mindease.service.SpeechService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +30,9 @@ public class ChatController {
 
     @Autowired
     private ChatService chatService;
+
+    @Autowired
+    private SpeechService speechService;
 
     @PostMapping("/session")
     public Result<ChatSessionCreateVO> createSession(HttpServletRequest request) {
@@ -91,5 +102,29 @@ public class ChatController {
         log.info("检测敏感词，用户ID: {}, 内容: {}", userId, chatMessageSendDTO.getContent());
         SensitiveWordCheckVO result = chatService.checkSensitiveWords(chatMessageSendDTO.getContent());
         return Result.success(result);
+    }
+
+    @PostMapping("/asr")
+    public Result<SpeechTranscriptionVO> transcribeAudio(@RequestParam("file") MultipartFile file,
+                                                         HttpServletRequest request) throws Exception {
+        Long userId = (Long) request.getAttribute("userId");
+        log.info("接收语音转写请求, userId={}, filename={}", userId, file != null ? file.getOriginalFilename() : null);
+        SpeechTranscriptionVO result = speechService.transcribe(file);
+        return Result.success(result);
+    }
+
+    @PostMapping(value = "/tts", produces = "audio/mpeg")
+    public ResponseEntity<byte[]> synthesizeSpeech(@RequestBody SpeechSynthesisDTO dto,
+                                                   HttpServletRequest request) throws Exception {
+        Long userId = (Long) request.getAttribute("userId");
+        log.info("接收语音合成请求, userId={}", userId);
+        byte[] audio = speechService.synthesize(dto.getText());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("audio/mpeg"));
+        headers.setContentDisposition(ContentDisposition.inline().filename("mindease-tts.mp3").build());
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(audio);
     }
 }
