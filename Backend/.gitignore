@@ -1,0 +1,23 @@
+# Maven build output
+**/target/
+
+# IDE files
+.idea/
+*.iml
+
+# Compiled class files
+*.class
+
+# Test files
+*Test.java
+**/test/
+
+# Development configuration
+**/application-dev.yml
+
+# System message
+**/system.txt
+
+# Cors config
+src/main/java/com/mindease/config/WebCorsConfig.java
+.vscode/

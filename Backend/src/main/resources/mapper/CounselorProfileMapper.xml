@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mindease.mapper.CounselorProfileMapper">
+
+    <resultMap id="CounselorProfileMap" type="com.mindease.pojo.entity.CounselorProfile">
+        <id property="userId" column="user_id"/>
+        <result property="realName" column="real_name"/>
+        <result property="title" column="title"/>
+        <result property="experienceYears" column="experience_years"/>
+        <result property="specialty" column="specialty"/>
+        <result property="bio" column="bio"/>
+        <result property="qualificationUrl" column="qualification_url"/>
+        <result property="location" column="location"/>
+        <result property="workSchedule" column="work_schedule"/>
+        <result property="pricePerHour" column="price_per_hour"/>
+        <result property="rating" column="rating"/>
+        <result property="reviewCount" column="review_count"/>
+    </resultMap>
+
+    <!-- 智能推荐咨询师，支持模糊关键词搜索（姓名/专长/职称/简介/地区） -->
+    <select id="recommendCounselors" resultMap="CounselorProfileMap">
+        SELECT
+            cp.*,
+            (
+                <if test="keywords != null and keywords.size() > 0">
+                    <foreach collection="keywords" item="keyword" separator="+">
+                        (
+                            CASE WHEN JSON_SEARCH(cp.specialty, 'one', CONCAT('%', #{keyword}, '%')) IS NOT NULL THEN 50 ELSE 0 END
+                            + CASE WHEN cp.real_name LIKE CONCAT('%', #{keyword}, '%') THEN 40 ELSE 0 END
+                            + CASE WHEN cp.title LIKE CONCAT('%', #{keyword}, '%') THEN 30 ELSE 0 END
+                            + CASE WHEN cp.bio LIKE CONCAT('%', #{keyword}, '%') THEN 20 ELSE 0 END
+                            + CASE WHEN cp.location LIKE CONCAT('%', #{keyword}, '%') THEN 10 ELSE 0 END
+                        )
+                    </foreach>
+                </if>
+                <if test="keywords == null || keywords.size() == 0">
+                    0
+                </if>
+            ) as match_score
+        FROM counselor_profile cp
+        JOIN sys_user u ON cp.user_id = u.id
+        WHERE u.status = 1
+        <if test="keywords != null and keywords.size() > 0">
+            AND (
+                <foreach collection="keywords" item="keyword" separator="OR">
+                    (
+                        JSON_SEARCH(cp.specialty, 'one', CONCAT('%', #{keyword}, '%')) IS NOT NULL
+                        OR cp.real_name LIKE CONCAT('%', #{keyword}, '%')
+                        OR cp.title LIKE CONCAT('%', #{keyword}, '%')
+                        OR cp.bio LIKE CONCAT('%', #{keyword}, '%')
+                        OR cp.location LIKE CONCAT('%', #{keyword}, '%')
+                    )
+                </foreach>
+            )
+        </if>
+        <choose>
+            <when test='sort == "price_asc"'>
+                ORDER BY cp.price_per_hour ASC, cp.rating DESC
+            </when>
+            <when test='sort == "rating_desc"'>
+                ORDER BY cp.rating DESC, cp.price_per_hour ASC
+            </when>
+            <otherwise>
+                ORDER BY match_score DESC, cp.rating DESC
+            </otherwise>
+        </choose>
+        LIMIT 10
+    </select>
+
+    <!-- 查询所有正常状态的咨询师 -->
+    <select id="getAllActiveCounselors" resultMap="CounselorProfileMap">
+        SELECT cp.*
+        FROM counselor_profile cp
+        JOIN sys_user u ON cp.user_id = u.id
+        WHERE u.status = 1
+        ORDER BY cp.rating DESC, cp.review_count DESC
+        LIMIT 10
+    </select>
+
+    <!-- 根据咨询师ID列表批量查询（协同过滤） -->
+    <select id="getByCounselorIds" resultMap="CounselorProfileMap">
+        SELECT cp.*
+        FROM counselor_profile cp
+        JOIN sys_user u ON cp.user_id = u.id
+        WHERE u.status = 1
+        <if test="counselorIds != null and counselorIds.size() > 0">
+            AND cp.user_id IN
+            <foreach collection="counselorIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        ORDER BY cp.rating DESC
+    </select>
+
+</mapper>
+

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mindease.mapper.AppointmentMapper">
+
+    <resultMap id="AppointmentMap" type="com.mindease.pojo.entity.Appointment">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="counselorId" column="counselor_id"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="status" column="status"/>
+        <result property="userNote" column="user_note"/>
+        <result property="cancelReason" column="cancel_reason"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- 查询用户的预约列表 -->
+    <select id="getByUserId" resultMap="AppointmentMap">
+        SELECT * FROM appointment
+        WHERE user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY start_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 查询咨询师的预约列表 -->
+    <select id="getByCounselorId" resultMap="AppointmentMap">
+        SELECT * FROM appointment
+        WHERE counselor_id = #{counselorId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY start_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 查询预约总数 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM appointment
+        WHERE 1=1
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+        <if test="counselorId != null">
+            AND counselor_id = #{counselorId}
+        </if>
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <!-- 查询已过期的已确认预约（用于自动完成） -->
+    <select id="getExpiredConfirmedAppointments" resultMap="AppointmentMap">
+        SELECT * FROM appointment
+        WHERE status = 'CONFIRMED'
+        AND end_time <![CDATA[ < ]]> #{currentTime}
+        <if test="userId != null">
+            AND (user_id = #{userId} OR counselor_id = #{userId})
+        </if>
+        ORDER BY end_time ASC
+    </select>
+
+</mapper>
+
