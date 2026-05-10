@@ -1,137 +1,59 @@
-// 前端A负责：登录态、角色状态、默认跳转规则
-import { computed, ref } from "vue";
+// 用户状态管理
 import { defineStore } from "pinia";
-
-export type UserRole = "USER" | "COUNSELOR" | "ADMIN";
-export type CounselorStatus = "PENDING" | "APPROVED";
-
-export interface DemoUserProfile {
-  nickname: string;
-  role: UserRole;
-  counselorStatus?: CounselorStatus;
-}
-
-export interface NavigationItem {
-  label: string;
-  path: string;
-}
-
-const TOKEN_KEY = "mindease-demo-token";
-const PROFILE_KEY = "mindease-demo-profile";
-
-export function isPendingCounselor(profile: DemoUserProfile | null) {
-  return (
-    profile?.role === "COUNSELOR" && profile.counselorStatus === "PENDING"
-  );
-}
-
-export function getDefaultRoute(profile: DemoUserProfile | null) {
-  if (!profile) {
-    return "/login";
-  }
-
-  if (profile.role === "ADMIN") {
-    return "/admin/dashboard";
-  }
-
-  if (profile.role === "COUNSELOR") {
-    return isPendingCounselor(profile)
-      ? "/counselor/audit-pending"
-      : "/counselor/dashboard";
-  }
-
-  return "/home";
-}
-
-export function getRoleLabel(profile: DemoUserProfile | null) {
-  if (!profile) {
-    return "未登录";
-  }
-
-  if (profile.role === "COUNSELOR") {
-    return isPendingCounselor(profile) ? "咨询师待审核" : "咨询师端";
-  }
-
-  return profile.role === "ADMIN" ? "管理员端" : "用户端";
-}
-
-export function getNavigationItems(
-  profile: DemoUserProfile | null,
-): NavigationItem[] {
-  if (!profile) {
-    return [];
-  }
-
-  if (profile.role === "ADMIN") {
-    return [{ label: "管理员工作台", path: "/admin/dashboard" }];
-  }
-
-  if (profile.role === "COUNSELOR") {
-    return isPendingCounselor(profile)
-      ? [{ label: "资质审核", path: "/counselor/audit-pending" }]
-      : [{ label: "咨询师工作台", path: "/counselor/dashboard" }];
-  }
-
-  return [
-    { label: "首页", path: "/home" },
-    { label: "情绪日记", path: "/mood-diary" },
-    { label: "AI 咨询", path: "/ai-chat" },
-    { label: "心理测评", path: "/assessment" },
-    { label: "咨询师推荐", path: "/counselor-list" },
-    { label: "我的预约", path: "/my-appointments" },
-    { label: "情绪报告", path: "/emotion-report" },
-    { label: "冥想时刻", path: "/meditation" },
-  ];
-}
-
-function readProfile(): DemoUserProfile | null {
-  const raw = localStorage.getItem(PROFILE_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as DemoUserProfile;
-  } catch {
-    localStorage.removeItem(PROFILE_KEY);
-    return null;
-  }
-}
+import { ref } from "vue";
+import type { UserInfo } from "@/api/auth";
+import { getUserProfile } from "@/api/auth";
 
 export const useUserStore = defineStore("user", () => {
-  const token = ref(localStorage.getItem(TOKEN_KEY) || "");
-  const profile = ref<DemoUserProfile | null>(readProfile());
+  // 用户信息
+  const userInfo = ref<UserInfo | null>(null);
 
-  const isLoggedIn = computed(() => Boolean(token.value && profile.value));
-  const defaultRoute = computed(() => getDefaultRoute(profile.value));
-  const roleLabel = computed(() => getRoleLabel(profile.value));
-  const navigationItems = computed(() => getNavigationItems(profile.value));
-  const pendingCounselor = computed(() => isPendingCounselor(profile.value));
+  // Token
+  const token = ref<string>(localStorage.getItem("token") || "");
 
-  function login(nextProfile: DemoUserProfile) {
-    token.value = `demo-token-${Date.now()}`;
-    profile.value = nextProfile;
-    localStorage.setItem(TOKEN_KEY, token.value);
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile));
-  }
+  // 是否已登录
+  const isLoggedIn = ref<boolean>(!!token.value);
 
-  function logout() {
+  // 设置 Token
+  const setToken = (newToken: string) => {
+    token.value = newToken;
+    localStorage.setItem("token", newToken);
+    isLoggedIn.value = true;
+  };
+
+  // 设置用户信息
+  const setUserInfo = (info: UserInfo) => {
+    userInfo.value = info;
+  };
+
+  // 获取用户信息
+  const fetchUserInfo = async () => {
+    try {
+      const res = await getUserProfile();
+      const data = (res.data as any).data || res.data;
+      userInfo.value = data;
+      return data;
+    } catch (error) {
+      console.error("获取用户信息失败:", error);
+      throw error;
+    }
+  };
+
+  // 登出
+  const logout = () => {
     token.value = "";
-    profile.value = null;
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(PROFILE_KEY);
-  }
+    userInfo.value = null;
+    isLoggedIn.value = false;
+    localStorage.removeItem("token");
+  };
 
   return {
+    userInfo,
     token,
-    profile,
     isLoggedIn,
-    defaultRoute,
-    roleLabel,
-    navigationItems,
-    pendingCounselor,
-    login,
+    setToken,
+    setUserInfo,
+    fetchUserInfo,
     logout,
   };
 });

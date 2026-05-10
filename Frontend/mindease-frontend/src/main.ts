@@ -1,15 +1,21 @@
-// 前端A负责：应用入口、插件注册、全局初始化
+// 引入全局样式（包含主题色、动画、玻璃态效果、装饰元素等）
 import "./assets/main.css";
-import "element-plus/dist/index.css";
 
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import ElementPlus from "element-plus";
+import "element-plus/dist/index.css";
+import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 
 import App from "./App.vue";
 import router from "./router";
 
 const app = createApp(App);
+
+// 注册所有 Element Plus 图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component);
+}
 
 app.use(createPinia());
 app.use(router);

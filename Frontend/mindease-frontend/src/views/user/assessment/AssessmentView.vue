@@ -1,215 +1,255 @@
-<!-- 前端A负责：心理测评列表 -->
+<template>
+  <div class="page-container">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">心理健康测评</h1>
+        <p class="page-subtitle">科学评估，了解自己的心理状态</p>
+      </div>
+      <button class="btn-secondary" @click="router.push('/assessment/history')">
+        <i class="fas fa-history"></i>
+        测评历史
+      </button>
+    </div>
+
+    <!-- 量表列表 -->
+    <div v-loading="loading" class="scales-grid">
+      <div
+        v-for="scale in scales"
+        :key="scale.scaleKey"
+        class="scale-card glass-card"
+        @click="startAssessment(scale.scaleKey)"
+      >
+        <div class="scale-cover">
+          <img :src="scale.coverUrl" :alt="scale.title" />
+        </div>
+        <div class="scale-content">
+          <h3 class="scale-title">{{ scale.title }}</h3>
+          <p class="scale-description">{{ scale.description }}</p>
+        </div>
+        <div class="scale-action">
+          <i class="fas fa-arrow-right"></i>
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <el-empty
+        v-if="!loading && scales.length === 0"
+        description="暂无可用量表"
+      />
+    </div>
+
+    <!-- 温馨提示 -->
+    <div class="tips-card glass-card">
+      <div class="tips-header">
+        <i class="fas fa-lightbulb"></i>
+        <span>温馨提示</span>
+      </div>
+      <ul class="tips-list">
+        <li>请在安静、不受打扰的环境中完成测评</li>
+        <li>根据最近两周的实际感受如实作答</li>
+        <li>测评结果仅供参考，不能替代专业诊断</li>
+        <li>如有严重心理问题，请及时寻求专业帮助</li>
+      </ul>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-
-import type { Scale } from "@/api/assessment";
-import { getScaleList } from "@/api/assessment";
-import EmptyState from "@/components/common/EmptyState.vue";
-import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
+import { getScaleList, type Scale } from "@/api/assessment";
 
 const router = useRouter();
 
 const loading = ref(false);
 const scales = ref<Scale[]>([]);
 
-async function loadScales() {
+const fetchScales = async () => {
   loading.value = true;
-
   try {
-    const response = await getScaleList();
-    scales.value = response.data.scales.filter((item: Scale) => item.status === "active");
-  } catch {
-    ElMessage.error("测评列表加载失败，请稍后再试");
+    const res = await getScaleList();
+    scales.value = res.data.scales;
+  } catch (error) {
+    console.error("获取量表列表失败:", error);
+    ElMessage.error("获取量表列表失败");
   } finally {
     loading.value = false;
   }
-}
+};
 
-function startAssessment(scaleKey: string) {
+const startAssessment = (scaleKey: string) => {
   router.push(`/assessment/${scaleKey}`);
-}
+};
 
 onMounted(() => {
-  loadScales();
+  fetchScales();
 });
 </script>
 
-<template>
-  <div class="assessment-page">
-    <section class="page-head">
-      <div>
-        <div class="eyebrow">心理测评</div>
-        <h2>选择适合当前状态的量表</h2>
-        <p>通过标准化问卷了解近期心理状态，结果仅作为自我观察参考。</p>
-      </div>
-      <el-button plain @click="router.push('/assessment/history')">
-        测评历史
-      </el-button>
-    </section>
-
-    <LoadingSpinner v-if="loading" text="正在加载测评量表" />
-
-    <EmptyState
-      v-else-if="scales.length === 0"
-      title="暂无可用量表"
-      description="稍后再回来看看，新的测评内容会持续补充。"
-    />
-
-    <section v-else class="scale-grid">
-      <article
-        v-for="scale in scales"
-        :key="scale.scaleKey"
-        class="scale-card glass-card"
-        @click="startAssessment(scale.scaleKey)"
-      >
-        <div class="scale-mark" :style="{ backgroundColor: scale.coverColor }">
-          {{ scale.title.slice(0, 3) }}
-        </div>
-        <div class="scale-body">
-          <h3>{{ scale.title }}</h3>
-          <p>{{ scale.description }}</p>
-          <div class="scale-meta">
-            <span>{{ scale.questionCount }} 题</span>
-            <span>约 {{ scale.estimatedMinutes }} 分钟</span>
-          </div>
-        </div>
-        <el-button type="primary" plain>开始</el-button>
-      </article>
-    </section>
-
-    <section class="notice-card glass-card">
-      <h3>作答提示</h3>
-      <div class="notice-list">
-        <span>选择安静、不受打扰的环境</span>
-        <span>根据最近一段时间的真实感受作答</span>
-        <span>结果不能替代专业诊断</span>
-      </div>
-    </section>
-  </div>
-</template>
-
 <style scoped>
-.assessment-page {
-  display: grid;
-  gap: 20px;
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
 }
 
-.page-head {
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  margin-bottom: var(--spacing-xl);
 }
 
-.eyebrow {
-  color: var(--ease-primary-dark);
-  font-size: 13px;
+.page-title {
+  font-size: 2rem;
   font-weight: 700;
+  color: var(--ease-dark);
+  margin-bottom: var(--spacing-xs);
 }
 
-h2,
-h3,
-p {
-  margin: 0;
+.page-subtitle {
+  font-size: 1rem;
+  color: var(--gray-500);
 }
 
-h2 {
-  margin-top: 6px;
-  font-size: 30px;
-}
-
-p {
-  margin-top: 8px;
-  color: var(--ease-muted);
-  line-height: 1.7;
-}
-
-.scale-grid {
+/* 量表网格 */
+.scales-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
+/* 量表卡片 */
 .scale-card {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 22px;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  border-radius: 1rem;
 }
 
 .scale-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(95, 122, 106, 0.35);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(123, 158, 137, 0.15);
+  border-color: var(--ease-accent);
 }
 
-.scale-mark {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-weight: 700;
+.scale-cover {
+  width: 80px;
+  height: 80px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.scale-body {
+.scale-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scale-content {
+  flex: 1;
   min-width: 0;
 }
 
-.scale-body h3 {
-  font-size: 17px;
+.scale-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ease-dark);
+  margin-bottom: var(--spacing-xs);
 }
 
-.scale-meta {
-  margin-top: 14px;
+.scale-description {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.5;
+}
+
+.scale-action {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  color: var(--ease-primary-dark);
-  font-size: 13px;
-  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(123, 158, 137, 0.1);
+  color: var(--ease-accent);
+  transition: all 0.3s ease;
 }
 
-.notice-card {
-  padding: 22px;
+.scale-card:hover .scale-action {
+  background: var(--ease-accent);
+  color: white;
 }
 
-.notice-list {
-  margin-top: 14px;
+/* 提示卡片 */
+.tips-card {
+  padding: var(--spacing-lg);
+  border-radius: 1rem;
+}
+
+.tips-header {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  color: var(--ease-muted);
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ease-dark);
+  margin-bottom: var(--spacing-md);
 }
 
-.notice-list span {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(123, 158, 137, 0.08);
+.tips-header i {
+  color: var(--ease-warm);
 }
 
-@media (max-width: 1100px) {
-  .scale-grid {
+.tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tips-list li {
+  position: relative;
+  padding-left: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.tips-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--ease-accent);
+  font-weight: bold;
+}
+
+.tips-list li:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: var(--spacing-md);
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .scales-grid {
     grid-template-columns: 1fr;
-  }
-
-  .scale-card {
-    grid-template-columns: auto 1fr;
-  }
-
-  .scale-card .el-button {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 720px) {
-  .page-head {
-    display: grid;
   }
 }
 </style>

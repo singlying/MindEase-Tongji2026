@@ -150,25 +150,9 @@
                       <span class="dot"></span>
                     </div>
                   </div>
-                  <div class="message-meta-row">
-                    <span class="message-time">{{
-                      formatTime(msg.createTime)
-                    }}</span>
-                    <button
-                      v-if="msg.content"
-                      type="button"
-                      class="speak-btn"
-                      :disabled="isTtsGenerating || isPlayingAudio"
-                      @click="handleSpeakText(msg.content)"
-                    >
-                      {{
-                        currentSpeakingText === msg.content &&
-                        (isTtsGenerating || isPlayingAudio)
-                          ? "朗读中..."
-                          : "朗读"
-                      }}
-                    </button>
-                  </div>
+                  <span class="message-time">{{
+                    formatTime(msg.createTime)
+                  }}</span>
                 </div>
               </div>
             </template>
@@ -203,13 +187,13 @@
               :autosize="{ minRows: 1, maxRows: 4 }"
               placeholder="在此输入你的想法..."
               @keydown.enter.exact.prevent="handleSendMessage"
-              :disabled="isSending || isListening || isRecording || isTranscribing"
+              :disabled="isSending"
             />
             <el-button
               type="primary"
               class="send-btn"
               :loading="isSending"
-              :disabled="!inputMessage.trim() || isListening || isRecording || isTranscribing"
+              :disabled="!inputMessage.trim()"
               @click="handleSendMessage"
             >
               <el-icon><Promotion /></el-icon>
@@ -217,88 +201,7 @@
           </div>
           <div class="input-footer">
             <div class="input-hints">
-              <span class="hint-text" v-if="isRecording">
-                正在录音，再点一次“结束录音”即可上传转写。
-              </span>
-              <span class="hint-text" v-else-if="isTranscribing">
-                录音已上传，后端正在转写，请稍候。
-              </span>
-              <span class="hint-text" v-else-if="isListening">
-                正在听写中，再点一次“停止听写”即可结束。
-              </span>
-              <span class="hint-text" v-else>
-                按 Enter 发送，也可以直接进行语音输入或录音转写。
-              </span>
-              <span v-if="!isSpeechRecognitionSupported" class="hint-text warning-text">
-                当前浏览器不支持即时语音识别，建议使用最新版 Edge 或 Chrome。
-              </span>
-              <span v-if="!isMediaRecorderSupported" class="hint-text warning-text">
-                当前浏览器不支持录音转写。
-              </span>
-            </div>
-            <div class="voice-actions">
-              <button
-                type="button"
-                class="voice-btn"
-                :class="{ listening: isListening }"
-                :disabled="!isSpeechRecognitionSupported || isBusyWithVoice"
-                @click="toggleVoiceInput"
-              >
-                {{ isListening ? "停止听写" : "语音输入" }}
-              </button>
-              <button
-                type="button"
-                class="record-btn"
-                :class="{ recording: isRecording }"
-                :disabled="!isMediaRecorderSupported || isSending || isListening || isTranscribing"
-                @click="toggleAudioRecording"
-              >
-                {{ isTranscribing ? "转写中..." : isRecording ? "结束录音" : "录音转写" }}
-              </button>
-              <button
-                type="button"
-                class="direct-voice-btn"
-                :class="{ recording: isRecording && isDirectVoiceConversation }"
-                :disabled="
-                  !isMediaRecorderSupported ||
-                  isListening ||
-                  isTranscribing ||
-                  (isSending && !isDirectVoiceConversation)
-                "
-                @click="toggleDirectVoiceConversation"
-              >
-                {{
-                  isRecording && isDirectVoiceConversation
-                    ? "结束语音对话"
-                    : "直接语音对话"
-                }}
-              </button>
-              <button
-                type="button"
-                class="conversation-voice-btn"
-                :class="{
-                  active: isConversationModeEnabled,
-                  recording: isRecording && recordingIntent === 'conversation',
-                }"
-                :disabled="!isMediaRecorderSupported || isListening || isTranscribing"
-                @click="toggleConversationMode"
-              >
-                {{
-                  isConversationModeEnabled
-                    ? (isRecording && recordingIntent === "conversation"
-                        ? "结束本轮并关闭"
-                        : "关闭语音会话")
-                    : "开启语音会话"
-                }}
-              </button>
-              <button
-                type="button"
-                class="auto-speak-toggle"
-                :class="{ active: autoSpeakEnabled }"
-                @click="toggleAutoSpeak"
-              >
-                {{ autoSpeakEnabled ? "自动朗读已开" : "自动朗读已关" }}
-              </button>
+              <span class="hint-text">按 Enter 发送</span>
             </div>
           </div>
         </div>
@@ -308,7 +211,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed, onBeforeUnmount } from "vue";
+import { ref, onMounted, nextTick, computed } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
@@ -325,27 +228,6 @@ import type { ChatMessageVO, ChatSessionVO } from "@/api/chat";
 import { useUserStore } from "@/stores/user";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-
-type BrowserSpeechRecognition = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onstart: null | (() => void);
-  onend: null | (() => void);
-  onerror: null | ((event: { error?: string }) => void);
-  onresult: null | ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void);
-  start: () => void;
-  stop: () => void;
-};
-
-type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
-
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor;
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  }
-}
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -395,231 +277,9 @@ const isAITyping = ref(false);
 const isCreatingSession = ref(false);
 const isLoadingSessions = ref(false);
 const messageContainer = ref<HTMLElement>();
-const isListening = ref(false);
-const isRecording = ref(false);
-const isTranscribing = ref(false);
-const isSpeechRecognitionSupported = ref(false);
-const isMediaRecorderSupported = ref(false);
-const autoSpeakEnabled = ref(false);
-const isTtsGenerating = ref(false);
-const isPlayingAudio = ref(false);
-const currentSpeakingText = ref("");
-const isDirectVoiceConversation = ref(false);
-const isConversationModeEnabled = ref(false);
-const recordingIntent = ref<"manual" | "direct" | "conversation" | null>(null);
 
 // LocalStorage Key
 const STORAGE_KEY = "mindease_current_session_id";
-const AUTO_SPEAK_KEY = "mindease_auto_speak_enabled";
-const GREETING_MESSAGE =
-  "你好！这里是一个没有评判的空间。如果你感到焦虑或困惑，可以随时告诉我，我会一直在这里倾听。";
-
-let speechRecognition: BrowserSpeechRecognition | null = null;
-let mediaRecorder: MediaRecorder | null = null;
-let recordingChunks: Blob[] = [];
-let currentAudio: HTMLAudioElement | null = null;
-
-const isBusyWithVoice = computed(
-  () => isSending.value || isRecording.value || isTranscribing.value
-);
-
-const startConversationTurn = () => {
-  if (
-    !isConversationModeEnabled.value ||
-    !isMediaRecorderSupported.value ||
-    !mediaRecorder ||
-    isRecording.value ||
-    isTranscribing.value ||
-    isSending.value ||
-    isTtsGenerating.value ||
-    isPlayingAudio.value
-  ) {
-    return;
-  }
-
-  recordingChunks = [];
-  isDirectVoiceConversation.value = false;
-  recordingIntent.value = "conversation";
-  mediaRecorder.start();
-};
-
-const stopAudioPlayback = () => {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.src = "";
-    currentAudio = null;
-  }
-  if ("speechSynthesis" in window) {
-    window.speechSynthesis.cancel();
-  }
-  currentSpeakingText.value = "";
-  isPlayingAudio.value = false;
-  isTtsGenerating.value = false;
-};
-
-const speakWithBrowser = (text: string) => {
-  if (!("speechSynthesis" in window)) {
-    throw new Error("浏览器不支持语音朗读");
-  }
-
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "zh-CN";
-  utterance.onstart = () => {
-    currentSpeakingText.value = text;
-    isPlayingAudio.value = true;
-  };
-  utterance.onend = () => {
-    currentSpeakingText.value = "";
-    isPlayingAudio.value = false;
-  };
-  utterance.onerror = () => {
-    currentSpeakingText.value = "";
-    isPlayingAudio.value = false;
-  };
-  window.speechSynthesis.speak(utterance);
-};
-
-const handleSpeakText = async (text: string) => {
-  if (!text.trim()) return;
-
-  stopAudioPlayback();
-  currentSpeakingText.value = text;
-  isTtsGenerating.value = true;
-
-  try {
-    const audioBlob = await chatApi.synthesizeSpeech(text);
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    currentAudio = audio;
-
-    audio.onplay = () => {
-      isTtsGenerating.value = false;
-      isPlayingAudio.value = true;
-    };
-    audio.onended = () => {
-      URL.revokeObjectURL(audioUrl);
-      stopAudioPlayback();
-    };
-    audio.onerror = () => {
-      URL.revokeObjectURL(audioUrl);
-      stopAudioPlayback();
-      ElMessage.error("语音播放失败，请重试");
-    };
-
-    const playPromise = audio.play();
-    if (playPromise) {
-      await playPromise;
-    }
-  } catch (error) {
-    isTtsGenerating.value = false;
-    speakWithBrowser(text);
-  }
-};
-
-const maybeAutoSpeak = async (text: string) => {
-  if (!autoSpeakEnabled.value || !text.trim()) return;
-  await handleSpeakText(text);
-};
-
-const setupSpeechRecognition = () => {
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!Recognition) {
-    isSpeechRecognitionSupported.value = false;
-    return;
-  }
-
-  isSpeechRecognitionSupported.value = true;
-  speechRecognition = new Recognition();
-  speechRecognition.lang = "zh-CN";
-  speechRecognition.continuous = false;
-  speechRecognition.interimResults = false;
-  speechRecognition.onstart = () => {
-    isListening.value = true;
-  };
-  speechRecognition.onend = () => {
-    isListening.value = false;
-  };
-  speechRecognition.onerror = () => {
-    isListening.value = false;
-    ElMessage.warning("语音识别没有成功，请再试一次");
-  };
-  speechRecognition.onresult = (event) => {
-    const text = Array.from(event.results)
-      .flatMap((result) => Array.from(result))
-      .map((item) => item.transcript)
-      .join("")
-      .trim();
-    if (text) {
-      inputMessage.value = inputMessage.value
-        ? `${inputMessage.value} ${text}`
-        : text;
-    }
-  };
-};
-
-const setupMediaRecorder = async () => {
-  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-    isMediaRecorderSupported.value = false;
-    return;
-  }
-
-  isMediaRecorderSupported.value = true;
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream);
-
-  mediaRecorder.onstart = () => {
-    isRecording.value = true;
-  };
-  mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-      recordingChunks.push(event.data);
-    }
-  };
-  mediaRecorder.onstop = async () => {
-    isRecording.value = false;
-    if (!recordingChunks.length) return;
-
-    const finishedIntent = recordingIntent.value;
-    recordingIntent.value = null;
-    isTranscribing.value = true;
-    try {
-      const audioBlob = new Blob(recordingChunks, {
-        type: mediaRecorder?.mimeType || "audio/webm",
-      });
-      const result = await chatApi.transcribeAudio(audioBlob);
-      const text = result.text?.trim();
-      if (text) {
-        if (
-          finishedIntent === "direct" ||
-          finishedIntent === "conversation"
-        ) {
-          await sendChatContent(text, { forceAutoSpeak: true });
-        } else {
-          inputMessage.value = inputMessage.value
-            ? `${inputMessage.value} ${text}`
-            : text;
-        }
-      }
-      ElMessage.success(
-        finishedIntent === "manual" ? "录音已转写" : "语音已发送"
-      );
-    } catch (error) {
-      ElMessage.error(
-        finishedIntent === "manual"
-          ? "录音转写失败，请稍后再试"
-          : "语音对话失败，请稍后再试"
-      );
-      if (finishedIntent === "conversation") {
-        isConversationModeEnabled.value = false;
-      }
-    } finally {
-      recordingChunks = [];
-      isTranscribing.value = false;
-      isDirectVoiceConversation.value = false;
-    }
-  };
-};
 
 // 加载会话列表
 const loadSessions = async () => {
@@ -649,7 +309,8 @@ const handleCreateNewSession = async () => {
     messages.value = [
       {
         sender: "ai",
-        content: GREETING_MESSAGE,
+        content:
+          "你好！这里是一个没有评判的空间。如果你感到焦虑或困惑，可以随时告诉我，我会一直在这里倾听。",
         createTime: new Date().toISOString(),
       },
     ];
@@ -682,7 +343,8 @@ const handleSwitchSession = async (sessionId: string) => {
     if (messages.value.length === 0) {
       messages.value.push({
         sender: "ai",
-        content: GREETING_MESSAGE,
+        content:
+          "你好！这里是一个没有评判的空间。如果你感到焦虑或困惑，可以随时告诉我，我会一直在这里倾听。",
         createTime: new Date().toISOString(),
       });
     }
@@ -721,170 +383,6 @@ const handleDeleteSessionById = async (sessionId: string) => {
   }
 };
 
-const sendChatContent = async (
-  userMessage: string,
-  options?: { forceAutoSpeak?: boolean }
-) => {
-  if (!userMessage.trim() || isSending.value) return;
-
-  messages.value.push({
-    sender: "user",
-    content: userMessage,
-    createTime: new Date().toISOString(),
-  });
-  scrollToBottom();
-
-  try {
-    const checkRes = (await chatApi.checkSensitiveWords({
-      sessionId: currentSessionId.value,
-      content: userMessage,
-    })) as any;
-
-    if (checkRes?.data?.containsSensitiveWord) {
-      const words = checkRes.data.sensitiveWords || [];
-      const wordsText =
-        words.length > 0 ? `（检测到关键表达：${words.join("、")}）` : "";
-
-      await ElMessageBox.alert(
-        `<div style="text-align:left;line-height:1.6;">
-          <p>我们在你的内容中看到了可能涉及<strong>自伤或轻生</strong>的表达${wordsText}。</p>
-          <p>你此刻的感受一定很不容易，<strong>但你的安全比一切都重要</strong>。</p>
-          <p>建议你优先联系身边可信任的人（家人、朋友、学校老师），或尽快寻求专业帮助：</p>
-          <ul style="padding-left:1.2em;margin:0.4em 0;">
-            <li>24小时心理危机干预热线：<strong>400-161-9995</strong></li>
-            <li>如情况紧急，请立即拨打<strong>120 / 110</strong> 或就近前往医院急诊科</li>
-          </ul>
-          <p>在确保安全的前提下，你也可以继续使用 MindEase 的日记、测评和咨询师预约等功能寻求长期支持。</p>
-        </div>`,
-        "安全提示",
-        {
-          confirmButtonText: "我知道了",
-          type: "warning",
-          customClass: "safety-alert-dialog",
-          dangerouslyUseHTMLString: true,
-        }
-      );
-      return;
-    }
-  } catch (err) {
-    console.error("敏感词检测失败:", err);
-    ElMessage.warning("安全检测暂时不可用，本次对话将继续进行。");
-  }
-
-  isSending.value = true;
-  isAITyping.value = true;
-
-  const aiMessageIndex = messages.value.length;
-  messages.value.push({
-    sender: "ai",
-    content: "",
-    createTime: new Date().toISOString(),
-  });
-
-  try {
-    const stream = await chatApi.sendMessage({
-      sessionId: currentSessionId.value,
-      content: userMessage,
-    });
-
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      if (messages.value[aiMessageIndex]) {
-        messages.value[aiMessageIndex].content += chunk;
-      }
-
-      await nextTick();
-      scrollToBottom();
-    }
-
-    isAITyping.value = false;
-    const aiContent = messages.value[aiMessageIndex]?.content || "";
-    if (aiContent && (autoSpeakEnabled.value || options?.forceAutoSpeak)) {
-      await handleSpeakText(aiContent);
-    }
-    if (options?.forceAutoSpeak && isConversationModeEnabled.value) {
-      window.setTimeout(() => {
-        startConversationTurn();
-      }, 500);
-    }
-  } catch (error) {
-    console.error("发送消息失败:", error);
-    ElMessage.error("发送消息失败，请重试");
-    messages.value.splice(aiMessageIndex, 1);
-    isAITyping.value = false;
-    if (isConversationModeEnabled.value) {
-      isConversationModeEnabled.value = false;
-    }
-  } finally {
-    isSending.value = false;
-  }
-};
-
-const toggleVoiceInput = () => {
-  if (!speechRecognition) return;
-  if (isListening.value) {
-    speechRecognition.stop();
-  } else {
-    speechRecognition.start();
-  }
-};
-
-const toggleAudioRecording = async () => {
-  if (!isMediaRecorderSupported.value || !mediaRecorder) return;
-
-  if (isRecording.value) {
-    mediaRecorder.stop();
-    return;
-  }
-
-  recordingChunks = [];
-  isDirectVoiceConversation.value = false;
-  recordingIntent.value = "manual";
-  mediaRecorder.start();
-};
-
-const toggleDirectVoiceConversation = async () => {
-  if (!isMediaRecorderSupported.value || !mediaRecorder) return;
-
-  if (isRecording.value && isDirectVoiceConversation.value) {
-    mediaRecorder.stop();
-    return;
-  }
-
-  if (isRecording.value) return;
-
-  recordingChunks = [];
-  isDirectVoiceConversation.value = true;
-  recordingIntent.value = "direct";
-  mediaRecorder.start();
-};
-
-const toggleConversationMode = () => {
-  if (!isMediaRecorderSupported.value || !mediaRecorder) return;
-
-  if (isConversationModeEnabled.value) {
-    isConversationModeEnabled.value = false;
-    if (isRecording.value && recordingIntent.value === "conversation") {
-      mediaRecorder.stop();
-    }
-    return;
-  }
-
-  isConversationModeEnabled.value = true;
-  startConversationTurn();
-};
-
-const toggleAutoSpeak = () => {
-  autoSpeakEnabled.value = !autoSpeakEnabled.value;
-  localStorage.setItem(AUTO_SPEAK_KEY, String(autoSpeakEnabled.value));
-};
-
 // 格式化会话时间
 const formatSessionTime = (time: string) => {
   if (!time) return "";
@@ -915,21 +413,6 @@ const formatSessionTime = (time: string) => {
 
 // 初始化：加载会话列表并恢复或创建会话
 onMounted(async () => {
-  autoSpeakEnabled.value = localStorage.getItem(AUTO_SPEAK_KEY) === "true";
-
-  if (!userStore.userInfo && userStore.isLoggedIn) {
-    try {
-      await userStore.fetchUserInfo();
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  setupSpeechRecognition();
-  await setupMediaRecorder().catch(() => {
-    isMediaRecorderSupported.value = false;
-  });
-
   // 先加载会话列表
   await loadSessions();
 
@@ -951,22 +434,111 @@ onMounted(async () => {
   }
 });
 
-onBeforeUnmount(() => {
-  speechRecognition?.stop();
-  mediaRecorder?.stream.getTracks().forEach((track) => track.stop());
-  stopAudioPlayback();
-  if ("speechSynthesis" in window) {
-    window.speechSynthesis.cancel();
-  }
-});
-
 // 发送消息
 const handleSendMessage = async () => {
   if (!inputMessage.value.trim() || isSending.value) return;
 
   const userMessage = inputMessage.value.trim();
   inputMessage.value = "";
-  await sendChatContent(userMessage);
+
+  // 先把用户消息展示出来
+  messages.value.push({
+    sender: "user",
+    content: userMessage,
+    createTime: new Date().toISOString(),
+  });
+  scrollToBottom();
+
+  // 先进行敏感词检测，避免在存在严重危机表达时继续对话
+  try {
+    const checkRes = (await chatApi.checkSensitiveWords({
+      sessionId: currentSessionId.value,
+      content: userMessage,
+    })) as any;
+
+    if (checkRes?.data?.containsSensitiveWord) {
+      // 检测到敏感词：不再调用 AI，对用户进行醒目的安全提示
+      const words = checkRes.data.sensitiveWords || [];
+      const wordsText =
+        words.length > 0 ? `（检测到关键表达：${words.join("、")}）` : "";
+
+      await ElMessageBox.alert(
+        `<div style="text-align:left;line-height:1.6;">
+          <p>我们在你的内容中看到了可能涉及<strong>自伤或轻生</strong>的表达${wordsText}。</p>
+          <p>你此刻的感受一定很不容易，<strong>但你的安全比一切都重要</strong>。</p>
+          <p>建议你优先联系身边可信任的人（家人、朋友、学校老师），或尽快寻求专业帮助：</p>
+          <ul style="padding-left:1.2em;margin:0.4em 0;">
+            <li>24小时心理危机干预热线：<strong>400-161-9995</strong></li>
+            <li>如情况紧急，请立即拨打<strong>120 / 110</strong> 或就近前往医院急诊科</li>
+          </ul>
+          <p>在确保安全的前提下，你也可以继续使用 MindEase 的日记、测评和咨询师预约等功能寻求长期支持。</p>
+        </div>`,
+        "安全提示",
+        {
+          confirmButtonText: "我知道了",
+          type: "warning",
+          customClass: "safety-alert-dialog",
+          dangerouslyUseHTMLString: true,
+        }
+      );
+
+      // 终止本次 AI 回复，不修改现有消息列表（只保留用户刚才的那条话）
+      return;
+    }
+  } catch (err) {
+    console.error("敏感词检测失败:", err);
+    // 检测失败时，为避免误杀，仍继续按原逻辑调用 AI，但提示一次
+    ElMessage.warning("安全检测暂时不可用，本次对话将继续进行。");
+  }
+
+  // 准备接收AI回复
+  isSending.value = true;
+  isAITyping.value = true;
+
+  // 创建AI消息占位符
+  const aiMessageIndex = messages.value.length;
+  messages.value.push({
+    sender: "ai",
+    content: "",
+    createTime: new Date().toISOString(),
+  });
+
+  try {
+    // 调用流式API
+    const stream = await chatApi.sendMessage({
+      sessionId: currentSessionId.value,
+      content: userMessage,
+    });
+
+    // 读取流式数据
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // 解码并追加到AI消息
+      const chunk = decoder.decode(value, { stream: true });
+      if (messages.value[aiMessageIndex]) {
+        messages.value[aiMessageIndex].content += chunk;
+      }
+
+      // 自动滚动
+      await nextTick();
+      scrollToBottom();
+    }
+
+    isAITyping.value = false;
+  } catch (error) {
+    console.error("发送消息失败:", error);
+    ElMessage.error("发送消息失败，请重试");
+    // 移除失败的AI消息占位符
+    messages.value.splice(aiMessageIndex, 1);
+    isAITyping.value = false;
+  } finally {
+    isSending.value = false;
+  }
 };
 
 // 格式化时间
@@ -1427,13 +999,6 @@ const scrollToBottom = () => {
   padding: 0 4px;
 }
 
-.message-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 4px;
-}
-
 /* ========== 输入区域 (复刻原型) ========== */
 .chat-input-area {
   padding: 24px;
@@ -1490,16 +1055,10 @@ const scrollToBottom = () => {
   transform: scale(1.05);
 }
 
-.send-btn:disabled,
-.voice-btn:disabled,
-.record-btn:disabled,
-.auto-speak-toggle:disabled,
-.speak-btn:disabled {
+.send-btn:disabled {
   background: var(--gray-300) !important;
   transform: none;
   box-shadow: none;
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* ========== 安全提示弹窗样式（敏感词检测） ========== */
@@ -1548,112 +1107,18 @@ const scrollToBottom = () => {
 .input-footer {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
   margin-top: 12px;
   padding: 0 8px;
 }
 
 .input-hints {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  flex: 1;
+  gap: 16px;
 }
 
 .hint-text {
   font-size: 12px;
   color: var(--gray-400);
-}
-
-.warning-text {
-  color: #b45309;
-}
-
-.speak-btn,
-.voice-btn,
-.record-btn,
-.direct-voice-btn,
-.conversation-voice-btn,
-.auto-speak-toggle {
-  border: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.speak-btn {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(123, 158, 137, 0.12);
-  color: var(--ease-accent-dark);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.voice-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.voice-btn,
-.record-btn,
-.direct-voice-btn,
-.conversation-voice-btn {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.voice-btn {
-  background: rgba(123, 158, 137, 0.12);
-  color: var(--ease-accent-dark);
-}
-
-.record-btn {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
-}
-
-.direct-voice-btn {
-  background: rgba(236, 72, 153, 0.12);
-  color: #be185d;
-}
-
-.conversation-voice-btn {
-  background: rgba(168, 85, 247, 0.12);
-  color: #7e22ce;
-}
-
-.voice-btn.listening,
-.record-btn.recording,
-.direct-voice-btn.recording,
-.conversation-voice-btn.recording {
-  background: rgba(239, 68, 68, 0.14);
-  color: #b91c1c;
-}
-
-.conversation-voice-btn.active {
-  background: rgba(168, 85, 247, 0.2);
-  color: #6b21a8;
-}
-
-.auto-speak-toggle {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.75);
-  color: var(--gray-500);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.auto-speak-toggle.active {
-  background: rgba(123, 158, 137, 0.16);
-  color: var(--ease-accent-dark);
 }
 
 /* Markdown样式 */
@@ -1807,19 +1272,6 @@ const scrollToBottom = () => {
 
   .message-item {
     max-width: 90%;
-  }
-
-  .input-footer {
-    flex-direction: column;
-  }
-
-  .voice-actions {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .voice-actions > * {
-    flex: 1 1 100%;
   }
 }
 </style>
