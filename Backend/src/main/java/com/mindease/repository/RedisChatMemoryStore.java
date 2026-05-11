@@ -9,36 +9,46 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 @Repository
 public class RedisChatMemoryStore implements ChatMemoryStore {
 
-    // 注入RedisTemplate
     @Autowired
     private StringRedisTemplate redisTemplate;
 
     @Override
     public List<ChatMessage> getMessages(Object memoryId) {
-        // 获取会话消息
+        if (memoryId == null) {
+            return new ArrayList<>();
+        }
+
         String json = redisTemplate.opsForValue().get(memoryId.toString());
-        // 把json字符串转化成List<ChatMessage>
+        if (json == null || json.isBlank()) {
+            return new ArrayList<>();
+        }
+
         List<ChatMessage> messages = ChatMessageDeserializer.messagesFromJson(json);
-        return messages;
+        return messages == null ? new ArrayList<>() : messages;
     }
 
     @Override
     public void updateMessages(Object memoryId, List<ChatMessage> list) {
-        // 更新会话消息
-        // 把list转换成json数据
+        if (memoryId == null) {
+            return;
+        }
+
         String json = ChatMessageSerializer.messagesToJson(list);
-        // 把json数据储存到redis中
         redisTemplate.opsForValue().set(memoryId.toString(), json, Duration.ofDays(1));
     }
 
     @Override
     public void deleteMessages(Object memoryId) {
-        // 删除会话消息
+        if (memoryId == null) {
+            return;
+        }
+
         redisTemplate.delete(memoryId.toString());
     }
 }
