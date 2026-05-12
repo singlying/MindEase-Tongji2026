@@ -1,53 +1,30 @@
-// 咨询师端相关API（使用者：咨询师）
-// 包含：资质审核等咨询师自己需要使用的接口
+// 前端B负责：咨询师资质与工作台接口
 import request from "./request";
-import type { ApiResponse } from "./request";
 
-// ============ 类型定义 ============
+export interface AuditStatus {
+  latestStatus: "PENDING" | "APPROVED" | "REJECTED";
+  submitTime?: string;
+  auditRemark?: string;
+}
 
-/**
- * 提交审核资料
- */
-export interface AuditSubmitParams {
+export interface SubmitAuditPayload {
   realName: string;
   qualificationUrl: string;
   idCardUrl?: string;
-  title?: string;
+  title: string;
   experienceYears?: number;
-  specialty?: string[];
+  specialty: string[];
   bio?: string;
-  location?: string;
+  location: string;
   pricePerHour?: number;
 }
 
-export interface AuditSubmitResponse {
-  auditId: number;
-}
+export const getAuditStatus = () => request.get<AuditStatus>("/counselor/audit/status");
 
-/**
- * 审核状态（严格对齐后端AuditStatusVO）
- */
-export interface AuditStatus {
-  latestStatus: "PENDING" | "APPROVED" | "REJECTED";
-  auditRemark?: string;
-  submitTime: string;
-}
+export const submitAudit = (payload: SubmitAuditPayload) =>
+  request.post("/counselor/audit/submit", payload);
 
-// ============ 咨询师端API ============
+export const getAuditStatusApi = getAuditStatus;
 
-/**
- * 提交资质审核
- */
-export const submitAudit = (data: AuditSubmitParams) => {
-  return request.post<ApiResponse<AuditSubmitResponse>>(
-    "/counselor/audit/submit",
-    data
-  );
-};
-
-/**
- * 获取审核状态
- */
-export const getAuditStatus = () => {
-  return request.get<ApiResponse<AuditStatus>>("/counselor/audit/status");
-};
+export const submitAuditApi = (payload: Record<string, unknown>) =>
+  submitAudit(payload as unknown as SubmitAuditPayload);
