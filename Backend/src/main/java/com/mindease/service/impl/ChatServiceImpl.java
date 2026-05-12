@@ -26,6 +26,34 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ChatServiceImpl implements ChatService {
 
+    private static final String MOTION_DIRECTIVE_PROMPT = """
+            你在回答前，必须先输出一个动作标签，格式严格如下：
+            [[MOTION:neutral]]
+            或
+            [[MOTION:concern]]
+            或
+            [[MOTION:encouragement]]
+            或
+            [[MOTION:surprise]]
+            或
+            [[MOTION:shy]]
+                        
+            动作选择规则：
+            1. neutral：日常闲聊、解释说明、情绪波动较小、平稳陪伴。
+            2. concern：关心、安抚、共情、低落或压力场景下的温和支持。
+            3. encouragement：鼓励、肯定、支持用户继续尝试或坚持。
+            4. surprise：惊讶、明显开心、明显积极反馈、轻松活跃回应。
+            5. shy：开场问候、轻柔打招呼、略带不好意思或更轻的暖场表达。
+                        
+            输出要求：
+            1. 第一行只能是动作标签，不能有其他解释。
+            2. 第二行开始再输出正式回复内容。
+            3. 回复正文不要再解释你选择了什么动作。
+            4. 如果只是普通聊天，优先使用 neutral，不要默认用 concern。
+                        
+            用户消息如下：
+            """;
+
     @Autowired
     private ChatSessionMapper chatSessionMapper;
     
@@ -115,8 +143,9 @@ public class ChatServiceImpl implements ChatService {
         
         // 调用AI服务获取回复，并收集完整内容
         StringBuilder fullResponse = new StringBuilder();
+        String prompt = buildMotionAwarePrompt(content);
         
-        Flux<String> aiResponse = consultantService.chat(sessionId, content)
+        Flux<String> aiResponse = consultantService.chat(sessionId, prompt)
                 .doOnNext(fullResponse::append);
         
         // 在流式响应完成后，保存AI消息到数据库
@@ -125,11 +154,22 @@ public class ChatServiceImpl implements ChatService {
             aiMessage.setSessionId(sessionId);
             aiMessage.setUserId(userId);
             aiMessage.setMessageRole("AI");
-            aiMessage.setContent(fullResponse.toString());
+            aiMessage.setContent(stripMotionDirective(fullResponse.toString()));
             aiMessage.setCreateTime(LocalDateTime.now());
             aiMessage.setUpdateTime(LocalDateTime.now());
             chatMessageMapper.insert(aiMessage);
         });
+    }
+
+    private String buildMotionAwarePrompt(String content) {
+        return MOTION_DIRECTIVE_PROMPT + "\n" + content;
+    }
+
+    private String stripMotionDirective(String content) {
+        if (content == null) {
+            return "";
+        }
+        return content.replaceFirst("^\\s*\\[\\[MOTION:(neutral|concern|encouragement|surprise|shy)\\]\\]\\s*", "");
     }
 
     @Override

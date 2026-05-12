@@ -89,10 +89,15 @@
       <div class="chat-container">
         <!-- 简洁头部 -->
         <div class="chat-header-simple">
-          <span class="current-session-title">{{
-            getCurrentSessionTitle
-          }}</span>
+          <div class="header-main">
+            <span class="current-session-title">{{
+              getCurrentSessionTitle
+            }}</span>
+          </div>
           <div class="header-actions">
+            <div class="emotion-chip" :class="`chip-${agentEmotionState}`">
+              {{ agentEmotionChip }}
+            </div>
             <el-popconfirm
               title="确定要删除当前会话吗？"
               confirm-button-text="确定"
@@ -113,194 +118,224 @@
           </div>
         </div>
 
-        <!-- 聊天消息区域 -->
-        <div class="chat-messages" ref="messageContainer">
-          <div
-            v-for="(msg, index) in messages"
-            :key="index"
-            class="message-wrapper"
-            :class="{ 'message-user': msg.sender === 'user' }"
-          >
-            <!-- AI消息 -->
-            <template v-if="msg.sender === 'ai'">
-              <div class="message-item">
-                <div class="message-avatar ai-avatar">
-                  <el-icon><Cpu /></el-icon>
-                </div>
-                <div class="message-content-wrapper">
-                  <span class="message-sender">MindEase AI</span>
-                  <div
-                    class="message-bubble bubble-ai"
-                    :class="{
-                      'has-typing': isAITyping && index === messages.length - 1,
-                    }"
-                  >
+        <div class="chat-main-content">
+          <div class="conversation-panel">
+            <!-- 聊天消息区域 -->
+            <div class="chat-messages" ref="messageContainer">
+              <div
+                v-for="(msg, index) in messages"
+                :key="index"
+                class="message-wrapper"
+                :class="{ 'message-user': msg.sender === 'user' }"
+              >
+                <!-- AI消息 -->
+                <template v-if="msg.sender === 'ai'">
+                  <div class="message-item">
                     <div
-                      class="markdown-content"
-                      v-if="msg.content"
-                      v-html="renderMarkdown(msg.content)"
-                    ></div>
-                    <!-- 打字动画（仅在最后一条AI消息且正在生成时显示） -->
-                    <div
-                      v-if="isAITyping && index === messages.length - 1"
-                      class="typing-indicator"
+                      class="message-avatar ai-avatar"
+                      :class="`emotion-shell-${msg.emotion || 'steady'}`"
                     >
-                      <span class="dot"></span>
-                      <span class="dot"></span>
-                      <span class="dot"></span>
+                      <span class="ai-avatar-core" :class="`core-${msg.emotion || 'steady'}`">
+                        <span class="avatar-spark"></span>
+                      </span>
+                    </div>
+                    <div class="message-content-wrapper">
+                      <span class="message-sender">MindEase AI</span>
+                      <div
+                        class="message-bubble bubble-ai"
+                        :class="{
+                          'has-typing': isAITyping && index === messages.length - 1,
+                        }"
+                      >
+                        <div
+                          class="markdown-content"
+                          v-if="msg.content"
+                          v-html="renderMarkdown(msg.content)"
+                        ></div>
+                        <!-- 打字动画（仅在最后一条AI消息且正在生成时显示） -->
+                        <div
+                          v-if="isAITyping && index === messages.length - 1"
+                          class="typing-indicator"
+                        >
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                        </div>
+                      </div>
+                      <div class="message-meta-row">
+                        <span
+                          v-if="msg.emotion && msg.content"
+                          class="message-emotion-badge"
+                          :class="`badge-${msg.emotion}`"
+                        >
+                          {{ getEmotionBadge(msg.emotion) }}
+                        </span>
+                        <span class="message-time">{{
+                          formatTime(msg.createTime)
+                        }}</span>
+                        <button
+                          v-if="msg.content"
+                          type="button"
+                          class="speak-btn"
+                          :disabled="isTtsGenerating || isPlayingAudio"
+                          @click="handleSpeakText(msg.content)"
+                        >
+                          {{
+                            currentSpeakingText === msg.content &&
+                            (isTtsGenerating || isPlayingAudio)
+                              ? "朗读中..."
+                              : "朗读"
+                          }}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div class="message-meta-row">
-                    <span class="message-time">{{
-                      formatTime(msg.createTime)
-                    }}</span>
-                    <button
-                      v-if="msg.content"
-                      type="button"
-                      class="speak-btn"
-                      :disabled="isTtsGenerating || isPlayingAudio"
-                      @click="handleSpeakText(msg.content)"
-                    >
-                      {{
-                        currentSpeakingText === msg.content &&
-                        (isTtsGenerating || isPlayingAudio)
-                          ? "朗读中..."
-                          : "朗读"
-                      }}
-                    </button>
+                </template>
+
+                <!-- 用户消息 -->
+                <template v-else>
+                  <div class="message-item">
+                    <div class="message-content-wrapper">
+                      <span class="message-sender">我</span>
+                      <div class="message-bubble bubble-user">
+                        {{ msg.content }}
+                      </div>
+                      <span class="message-time">{{
+                        formatTime(msg.createTime)
+                      }}</span>
+                    </div>
+                    <div class="message-avatar user-avatar">
+                      <el-avatar :src="userAvatar" :size="40" />
+                    </div>
                   </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="chat-input-area">
+              <div class="input-wrapper">
+                <el-input
+                  v-model="inputMessage"
+                  type="textarea"
+                  :rows="1"
+                  :autosize="{ minRows: 1, maxRows: 4 }"
+                  placeholder="在此输入你的想法..."
+                  @keydown.enter.exact.prevent="handleSendMessage"
+                  :disabled="isSending || isListening || isRecording || isTranscribing"
+                />
+                <el-button
+                  type="primary"
+                  class="send-btn"
+                  :loading="isSending"
+                  :disabled="!inputMessage.trim() || isListening || isRecording || isTranscribing"
+                  @click="handleSendMessage"
+                >
+                  <el-icon><Promotion /></el-icon>
+                </el-button>
+              </div>
+              <div class="input-footer">
+                <div class="input-hints">
+                  <span class="hint-text" v-if="isRecording">
+                    正在录音，再点一次“结束录音”即可上传转写。
+                  </span>
+                  <span class="hint-text" v-else-if="isTranscribing">
+                    录音已上传，后端正在转写，请稍候。
+                  </span>
+                  <span class="hint-text" v-else-if="isListening">
+                    正在听写中，再点一次“停止听写”即可结束。
+                  </span>
+                  <span class="hint-text" v-else>
+                    按 Enter 发送，也可以直接进行语音输入或录音转写。
+                  </span>
+                  <span v-if="!isSpeechRecognitionSupported" class="hint-text warning-text">
+                    当前浏览器不支持即时语音识别，建议使用最新版 Edge 或 Chrome。
+                  </span>
+                  <span v-if="!isMediaRecorderSupported" class="hint-text warning-text">
+                    当前浏览器不支持录音转写。
+                  </span>
+                </div>
+                <div class="voice-actions">
+                  <button
+                    type="button"
+                    class="voice-btn"
+                    :class="{ listening: isListening }"
+                    :disabled="!isSpeechRecognitionSupported || isBusyWithVoice"
+                    @click="toggleVoiceInput"
+                  >
+                    {{ isListening ? "停止听写" : "语音输入" }}
+                  </button>
+                  <button
+                    type="button"
+                    class="record-btn"
+                    :class="{ recording: isRecording }"
+                    :disabled="!isMediaRecorderSupported || isSending || isListening || isTranscribing"
+                    @click="toggleAudioRecording"
+                  >
+                    {{ isTranscribing ? "转写中..." : isRecording ? "结束录音" : "录音转写" }}
+                  </button>
+                  <button
+                    type="button"
+                    class="direct-voice-btn"
+                    :class="{ recording: isRecording && isDirectVoiceConversation }"
+                    :disabled="
+                      !isMediaRecorderSupported ||
+                      isListening ||
+                      isTranscribing ||
+                      (isSending && !isDirectVoiceConversation)
+                    "
+                    @click="toggleDirectVoiceConversation"
+                  >
+                    {{
+                      isRecording && isDirectVoiceConversation
+                        ? "结束语音对话"
+                        : "直接语音对话"
+                    }}
+                  </button>
+                  <button
+                    type="button"
+                    class="conversation-voice-btn"
+                    :class="{
+                      active: isConversationModeEnabled,
+                      recording: isRecording && recordingIntent === 'conversation',
+                    }"
+                    :disabled="!isMediaRecorderSupported || isListening || isTranscribing"
+                    @click="toggleConversationMode"
+                  >
+                    {{
+                      isConversationModeEnabled
+                        ? (isRecording && recordingIntent === "conversation"
+                            ? "结束本轮并关闭"
+                            : "关闭语音会话")
+                        : "开启语音会话"
+                    }}
+                  </button>
+                  <button
+                    type="button"
+                    class="auto-speak-toggle"
+                    :class="{ active: autoSpeakEnabled }"
+                    @click="toggleAutoSpeak"
+                  >
+                    {{ autoSpeakEnabled ? "自动朗读已开" : "自动朗读已关" }}
+                  </button>
                 </div>
               </div>
-            </template>
-
-            <!-- 用户消息 -->
-            <template v-else>
-              <div class="message-item">
-                <div class="message-content-wrapper">
-                  <span class="message-sender">我</span>
-                  <div class="message-bubble bubble-user">
-                    {{ msg.content }}
-                  </div>
-                  <span class="message-time">{{
-                    formatTime(msg.createTime)
-                  }}</span>
-                </div>
-                <div class="message-avatar user-avatar">
-                  <el-avatar :src="userAvatar" :size="40" />
-                </div>
-              </div>
-            </template>
-          </div>
-        </div>
-
-        <!-- 输入区域 -->
-        <div class="chat-input-area">
-          <div class="input-wrapper">
-            <el-input
-              v-model="inputMessage"
-              type="textarea"
-              :rows="1"
-              :autosize="{ minRows: 1, maxRows: 4 }"
-              placeholder="在此输入你的想法..."
-              @keydown.enter.exact.prevent="handleSendMessage"
-              :disabled="isSending || isListening || isRecording || isTranscribing"
-            />
-            <el-button
-              type="primary"
-              class="send-btn"
-              :loading="isSending"
-              :disabled="!inputMessage.trim() || isListening || isRecording || isTranscribing"
-              @click="handleSendMessage"
-            >
-              <el-icon><Promotion /></el-icon>
-            </el-button>
-          </div>
-          <div class="input-footer">
-            <div class="input-hints">
-              <span class="hint-text" v-if="isRecording">
-                正在录音，再点一次“结束录音”即可上传转写。
-              </span>
-              <span class="hint-text" v-else-if="isTranscribing">
-                录音已上传，后端正在转写，请稍候。
-              </span>
-              <span class="hint-text" v-else-if="isListening">
-                正在听写中，再点一次“停止听写”即可结束。
-              </span>
-              <span class="hint-text" v-else>
-                按 Enter 发送，也可以直接进行语音输入或录音转写。
-              </span>
-              <span v-if="!isSpeechRecognitionSupported" class="hint-text warning-text">
-                当前浏览器不支持即时语音识别，建议使用最新版 Edge 或 Chrome。
-              </span>
-              <span v-if="!isMediaRecorderSupported" class="hint-text warning-text">
-                当前浏览器不支持录音转写。
-              </span>
-            </div>
-            <div class="voice-actions">
-              <button
-                type="button"
-                class="voice-btn"
-                :class="{ listening: isListening }"
-                :disabled="!isSpeechRecognitionSupported || isBusyWithVoice"
-                @click="toggleVoiceInput"
-              >
-                {{ isListening ? "停止听写" : "语音输入" }}
-              </button>
-              <button
-                type="button"
-                class="record-btn"
-                :class="{ recording: isRecording }"
-                :disabled="!isMediaRecorderSupported || isSending || isListening || isTranscribing"
-                @click="toggleAudioRecording"
-              >
-                {{ isTranscribing ? "转写中..." : isRecording ? "结束录音" : "录音转写" }}
-              </button>
-              <button
-                type="button"
-                class="direct-voice-btn"
-                :class="{ recording: isRecording && isDirectVoiceConversation }"
-                :disabled="
-                  !isMediaRecorderSupported ||
-                  isListening ||
-                  isTranscribing ||
-                  (isSending && !isDirectVoiceConversation)
-                "
-                @click="toggleDirectVoiceConversation"
-              >
-                {{
-                  isRecording && isDirectVoiceConversation
-                    ? "结束语音对话"
-                    : "直接语音对话"
-                }}
-              </button>
-              <button
-                type="button"
-                class="conversation-voice-btn"
-                :class="{
-                  active: isConversationModeEnabled,
-                  recording: isRecording && recordingIntent === 'conversation',
-                }"
-                :disabled="!isMediaRecorderSupported || isListening || isTranscribing"
-                @click="toggleConversationMode"
-              >
-                {{
-                  isConversationModeEnabled
-                    ? (isRecording && recordingIntent === "conversation"
-                        ? "结束本轮并关闭"
-                        : "关闭语音会话")
-                    : "开启语音会话"
-                }}
-              </button>
-              <button
-                type="button"
-                class="auto-speak-toggle"
-                :class="{ active: autoSpeakEnabled }"
-                @click="toggleAutoSpeak"
-              >
-                {{ autoSpeakEnabled ? "自动朗读已开" : "自动朗读已关" }}
-              </button>
             </div>
           </div>
+
+          <aside class="companion-rail">
+            <div class="companion-panel">
+              <Live2DCompanion
+                :emotion="agentEmotionState"
+                :speaking="isPlayingAudio"
+                :thinking="isAITyping"
+                :title="agentEmotionLabel"
+                :description="agentEmotionDescription"
+                :motion-cue="agentMotionCue"
+                :motion-seed="agentMotionSeed"
+              />
+            </div>
+          </aside>
         </div>
       </div>
     </div>
@@ -314,8 +349,6 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import {
   HomeFilled,
   Delete,
-  Cpu,
-  User,
   Promotion,
   Plus,
   ChatDotRound,
@@ -325,6 +358,7 @@ import type { ChatMessageVO, ChatSessionVO } from "@/api/chat";
 import { useUserStore } from "@/stores/user";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import Live2DCompanion from "@/components/chat/Live2DCompanion.vue";
 
 type BrowserSpeechRecognition = {
   lang: string;
@@ -339,6 +373,32 @@ type BrowserSpeechRecognition = {
 };
 
 type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+type AgentEmotion =
+  | "steady"
+  | "listening"
+  | "soothing"
+  | "encouraging"
+  | "warm"
+  | "celebrating"
+  | "alert";
+
+type AgentMotionCue =
+  | "neutral"
+  | "concern"
+  | "encouragement"
+  | "surprise"
+  | "shy";
+
+type ChatViewMessage = ChatMessageVO & {
+  emotion?: AgentEmotion;
+  motionCue?: AgentMotionCue;
+};
+
+type MotionParseResult = {
+  motionCue: AgentMotionCue;
+  content: string;
+  waitingForDirective: boolean;
+};
 
 declare global {
   interface Window {
@@ -386,7 +446,7 @@ const getCurrentSessionTitle = computed(() => {
 });
 
 // 状态管理
-const messages = ref<ChatMessageVO[]>([]);
+const messages = ref<ChatViewMessage[]>([]);
 const sessions = ref<ChatSessionVO[]>([]);
 const inputMessage = ref("");
 const currentSessionId = ref("");
@@ -407,6 +467,7 @@ const currentSpeakingText = ref("");
 const isDirectVoiceConversation = ref(false);
 const isConversationModeEnabled = ref(false);
 const recordingIntent = ref<"manual" | "direct" | "conversation" | null>(null);
+const agentMotionSeed = ref(0);
 
 // LocalStorage Key
 const STORAGE_KEY = "mindease_current_session_id";
@@ -414,10 +475,168 @@ const AUTO_SPEAK_KEY = "mindease_auto_speak_enabled";
 const GREETING_MESSAGE =
   "你好！这里是一个没有评判的空间。如果你感到焦虑或困惑，可以随时告诉我，我会一直在这里倾听。";
 
+const EMOTION_COPY: Record<
+  AgentEmotion,
+  { label: string; description: string; chip: string; badge: string }
+> = {
+  steady: {
+    label: "Calm and steady",
+    description: "Holding a stable, non-judgmental space for the conversation.",
+    chip: "Steady Presence",
+    badge: "steady",
+  },
+  listening: {
+    label: "Deep listening",
+    description: "The agent is focusing closely on your message and emotional cues.",
+    chip: "Listening",
+    badge: "listening",
+  },
+  soothing: {
+    label: "Gentle soothing",
+    description: "The response is leaning toward calming, grounding, and emotional reassurance.",
+    chip: "Soothing",
+    badge: "soothing",
+  },
+  encouraging: {
+    label: "Supportive encouragement",
+    description: "The agent is offering affirmation, confidence, and a gentle push forward.",
+    chip: "Encouraging",
+    badge: "encouraging",
+  },
+  warm: {
+    label: "Warm connection",
+    description: "The conversation currently carries a warmer, more human sense of companionship.",
+    chip: "Warm",
+    badge: "warm",
+  },
+  celebrating: {
+    label: "Positive uplift",
+    description: "The reply contains more positive energy, relief, or light celebration.",
+    chip: "Positive",
+    badge: "smile",
+  },
+  alert: {
+    label: "Careful attention",
+    description: "The content requires a more careful, explicit, and safety-aware response style.",
+    chip: "Careful",
+    badge: "alert",
+  },
+};
+
 let speechRecognition: BrowserSpeechRecognition | null = null;
 let mediaRecorder: MediaRecorder | null = null;
 let recordingChunks: Blob[] = [];
 let currentAudio: HTMLAudioElement | null = null;
+
+const inferEmotionFromText = (
+  content: string,
+  sender: "ai" | "user" = "ai"
+): AgentEmotion => {
+  const text = content.trim();
+  if (!text) return sender === "user" ? "listening" : "steady";
+
+  if (
+    /紧急|立刻|马上|危机|热线|安全|专业帮助|拨打|医院|报警|120|110/.test(text)
+  ) {
+    return "alert";
+  }
+
+  if (
+    /抱抱|没关系|别担心|慢一点|先休息|呼吸|你已经很不容易|辛苦了|我在这里|陪你/.test(
+      text
+    )
+  ) {
+    return "soothing";
+  }
+
+  if (/很好|做得很棒|继续|你可以|试试看|相信自己|有进步|愿意面对/.test(text)) {
+    return "encouraging";
+  }
+
+  if (/开心|轻松|太好了|真不错|为你高兴|值得庆祝|真替你开心/.test(text)) {
+    return "celebrating";
+  }
+
+  if (/谢谢你分享|听起来|我理解|我能感受到|愿意说出来|我在认真听/.test(text)) {
+    return "warm";
+  }
+
+  return sender === "user" ? "listening" : "steady";
+};
+
+const parseMotionTaggedContent = (rawContent: string): MotionParseResult => {
+  const trimmedStart = rawContent.replace(/^\s*/, "");
+  const directiveMatch = trimmedStart.match(
+    /^\[\[MOTION:(neutral|concern|encouragement|surprise|shy)\]\]\s*/i
+  );
+
+  if (directiveMatch) {
+    return {
+      motionCue: (directiveMatch[1]?.toLowerCase() || "neutral") as AgentMotionCue,
+      content: trimmedStart.slice(directiveMatch[0].length),
+      waitingForDirective: false,
+    };
+  }
+
+  if (/^\[\[MOTION:[a-z]*$/i.test(trimmedStart) || /^\[\[MOTION:[a-z]+\]\]?$/i.test(trimmedStart)) {
+    return {
+      motionCue: "neutral",
+      content: "",
+      waitingForDirective: true,
+    };
+  }
+
+  return {
+    motionCue: "neutral",
+    content: rawContent,
+    waitingForDirective: false,
+  };
+};
+
+const createMessage = (
+  sender: "ai" | "user",
+  content: string,
+  createTime = new Date().toISOString()
+): ChatViewMessage => ({
+  sender,
+  content,
+  createTime,
+  emotion: inferEmotionFromText(content, sender),
+  motionCue:
+    sender === "ai" && content === GREETING_MESSAGE
+      ? "shy"
+      : "neutral",
+});
+
+const agentEmotionState = computed<AgentEmotion>(() => {
+  if (isAITyping.value) return "listening";
+
+  const lastAiMessage = [...messages.value]
+    .reverse()
+    .find((message) => message.sender === "ai" && message.content?.trim());
+
+  return lastAiMessage?.emotion || "steady";
+});
+
+const agentEmotionLabel = computed(
+  () => EMOTION_COPY[agentEmotionState.value].label
+);
+const agentEmotionDescription = computed(
+  () => EMOTION_COPY[agentEmotionState.value].description
+);
+const agentEmotionChip = computed(
+  () => EMOTION_COPY[agentEmotionState.value].chip
+);
+
+const getEmotionBadge = (emotion: AgentEmotion) => EMOTION_COPY[emotion].badge;
+
+const agentMotionCue = computed<AgentMotionCue>(() => {
+  const lastAiMessage = [...messages.value]
+    .reverse()
+    .find((message) => message.sender === "ai" && message.content?.trim());
+
+  return lastAiMessage?.motionCue || "neutral";
+});
 
 const isBusyWithVoice = computed(
   () => isSending.value || isRecording.value || isTranscribing.value
@@ -646,13 +865,7 @@ const handleCreateNewSession = async () => {
     localStorage.setItem(STORAGE_KEY, newSessionId);
 
     // 清空消息
-    messages.value = [
-      {
-        sender: "ai",
-        content: GREETING_MESSAGE,
-        createTime: new Date().toISOString(),
-      },
-    ];
+    messages.value = [createMessage("ai", GREETING_MESSAGE)];
 
     // 刷新会话列表
     await loadSessions();
@@ -676,15 +889,17 @@ const handleSwitchSession = async (sessionId: string) => {
   // 加载该会话的历史消息
   try {
     const res = (await chatApi.getHistory(sessionId, 50)) as any;
-    messages.value = res.data.messages || [];
+    messages.value = (res.data.messages || []).map((message: ChatMessageVO) =>
+      createMessage(
+        message.sender as "ai" | "user",
+        message.content,
+        message.createTime
+      )
+    );
 
     // 如果没有消息，添加欢迎消息
     if (messages.value.length === 0) {
-      messages.value.push({
-        sender: "ai",
-        content: GREETING_MESSAGE,
-        createTime: new Date().toISOString(),
-      });
+      messages.value.push(createMessage("ai", GREETING_MESSAGE));
     }
 
     // 滚动到底部
@@ -727,11 +942,7 @@ const sendChatContent = async (
 ) => {
   if (!userMessage.trim() || isSending.value) return;
 
-  messages.value.push({
-    sender: "user",
-    content: userMessage,
-    createTime: new Date().toISOString(),
-  });
+  messages.value.push(createMessage("user", userMessage));
   scrollToBottom();
 
   try {
@@ -775,11 +986,7 @@ const sendChatContent = async (
   isAITyping.value = true;
 
   const aiMessageIndex = messages.value.length;
-  messages.value.push({
-    sender: "ai",
-    content: "",
-    createTime: new Date().toISOString(),
-  });
+  messages.value.push(createMessage("ai", ""));
 
   try {
     const stream = await chatApi.sendMessage({
@@ -789,14 +996,24 @@ const sendChatContent = async (
 
     const reader = stream.getReader();
     const decoder = new TextDecoder();
+    let rawAiContent = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       const chunk = decoder.decode(value, { stream: true });
+      rawAiContent += chunk;
+      const parsed = parseMotionTaggedContent(rawAiContent);
       if (messages.value[aiMessageIndex]) {
-        messages.value[aiMessageIndex].content += chunk;
+        messages.value[aiMessageIndex].motionCue = parsed.motionCue;
+        if (!parsed.waitingForDirective) {
+          messages.value[aiMessageIndex].content = parsed.content;
+          messages.value[aiMessageIndex].emotion = inferEmotionFromText(
+            messages.value[aiMessageIndex].content,
+            "ai"
+          );
+        }
       }
 
       await nextTick();
@@ -804,7 +1021,15 @@ const sendChatContent = async (
     }
 
     isAITyping.value = false;
-    const aiContent = messages.value[aiMessageIndex]?.content || "";
+    const parsedFinal = parseMotionTaggedContent(rawAiContent);
+    const aiContent = parsedFinal.content || messages.value[aiMessageIndex]?.content || "";
+    if (messages.value[aiMessageIndex]) {
+      messages.value[aiMessageIndex].content = aiContent;
+      messages.value[aiMessageIndex].motionCue =
+        aiContent === GREETING_MESSAGE ? "shy" : parsedFinal.motionCue;
+      messages.value[aiMessageIndex].emotion = inferEmotionFromText(aiContent, "ai");
+    }
+    agentMotionSeed.value += 1;
     if (aiContent && (autoSpeakEnabled.value || options?.forceAutoSpeak)) {
       await handleSpeakText(aiContent);
     }
@@ -1280,15 +1505,55 @@ const scrollToBottom = () => {
   overflow: hidden;
 }
 
+.chat-main-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 20px;
+  padding: 20px 20px 20px 24px;
+}
+
+.conversation-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.companion-rail {
+  width: 292px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.companion-panel {
+  width: 100%;
+  position: sticky;
+  top: 0;
+}
+
 /* 简洁头部 */
 .chat-header-simple {
-  height: 64px;
-  padding: 0 32px;
+  min-height: 74px;
+  padding: 18px 24px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.3);
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .current-session-title {
@@ -1297,8 +1562,126 @@ const scrollToBottom = () => {
   color: var(--gray-500);
 }
 
+.agent-presence {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(31, 38, 135, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.presence-avatar-shell {
+  position: relative;
+  width: 128px;
+  height: 142px;
+  flex-shrink: 0;
+}
+
+.presence-avatar-shell::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 22px;
+  background: radial-gradient(
+    circle,
+    rgba(123, 158, 137, 0.22) 0%,
+    rgba(123, 158, 137, 0) 72%
+  );
+  animation: companion-aura 4s ease-in-out infinite;
+}
+
+.presence-avatar,
+.avatar-agent {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fefefe 0%, #edf5f0 100%);
+}
+
+.presence-avatar {
+  width: 128px;
+  height: 142px;
+  border-radius: 28px;
+  border: 1px solid rgba(123, 158, 137, 0.16);
+  box-shadow: 0 20px 36px rgba(123, 158, 137, 0.16);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(180deg, #fcfffd 0%, #eef5f0 55%, #e4eee8 100%);
+}
+
+.presence-copy {
+  min-width: 0;
+}
+
+.presence-title {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 2px;
+}
+
+.presence-emotion {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ease-dark);
+  margin-bottom: 3px;
+}
+
+.presence-description {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--gray-500);
+}
+
+.emotion-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(123, 158, 137, 0.12);
+  color: var(--ease-accent-dark);
+  white-space: nowrap;
+}
+
+.chip-listening,
+.presence-listening {
+  background: rgba(147, 197, 253, 0.18);
+}
+
+.chip-soothing,
+.presence-soothing {
+  background: rgba(196, 181, 253, 0.2);
+}
+
+.chip-encouraging,
+.presence-encouraging {
+  background: rgba(134, 239, 172, 0.2);
+}
+
+.chip-warm,
+.presence-warm {
+  background: rgba(251, 191, 36, 0.18);
+}
+
+.chip-celebrating,
+.presence-celebrating {
+  background: rgba(249, 168, 212, 0.2);
+}
+
+.chip-alert,
+.presence-alert {
+  background: rgba(252, 165, 165, 0.22);
+}
+
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -1323,10 +1706,11 @@ const scrollToBottom = () => {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 32px;
+  padding: 26px 28px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-height: 0;
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -1369,11 +1753,112 @@ const scrollToBottom = () => {
 }
 
 .ai-avatar {
-  background: linear-gradient(135deg, var(--ease-accent) 0%, #059669 100%);
+  background: transparent;
+  box-shadow: none;
 }
 
 .user-avatar {
   background: var(--ease-warm);
+}
+
+.ai-avatar-core {
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #fbfffc 0%, #edf4ef 100%);
+  border: 1px solid rgba(123, 158, 137, 0.16);
+  box-shadow: 0 10px 18px rgba(123, 158, 137, 0.14);
+}
+
+.avatar-spark {
+  width: 16px;
+  height: 16px;
+  border-radius: 6px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #7ba88d 0%, #4a7a64 100%);
+  box-shadow: 0 0 16px rgba(123, 168, 141, 0.32);
+}
+
+.core-listening .avatar-spark {
+  background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.28);
+}
+
+.core-soothing .avatar-spark {
+  background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 100%);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.28);
+}
+
+.core-encouraging .avatar-spark {
+  background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.24);
+}
+
+.core-warm .avatar-spark {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.26);
+}
+
+.core-celebrating .avatar-spark {
+  background: linear-gradient(135deg, #f9a8d4 0%, #ec4899 100%);
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.28);
+}
+
+.core-alert .avatar-spark {
+  background: linear-gradient(135deg, #fca5a5 0%, #ef4444 100%);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.28);
+}
+
+.emotion-shell-soothing,
+.emotion-shell-listening,
+.emotion-shell-encouraging,
+.emotion-shell-warm,
+.emotion-shell-celebrating,
+.emotion-shell-alert {
+  position: relative;
+}
+
+.emotion-shell-soothing::after,
+.emotion-shell-listening::after,
+.emotion-shell-encouraging::after,
+.emotion-shell-warm::after,
+.emotion-shell-celebrating::after,
+.emotion-shell-alert::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0.75;
+  filter: blur(8px);
+}
+
+.emotion-shell-soothing::after {
+  background: rgba(196, 181, 253, 0.35);
+}
+
+.emotion-shell-listening::after {
+  background: rgba(147, 197, 253, 0.3);
+}
+
+.emotion-shell-encouraging::after {
+  background: rgba(134, 239, 172, 0.34);
+}
+
+.emotion-shell-warm::after {
+  background: rgba(251, 191, 36, 0.28);
+}
+
+.emotion-shell-celebrating::after {
+  background: rgba(249, 168, 212, 0.32);
+}
+
+.emotion-shell-alert::after {
+  background: rgba(252, 165, 165, 0.34);
 }
 
 .message-content-wrapper {
@@ -1430,17 +1915,279 @@ const scrollToBottom = () => {
 .message-meta-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 0 4px;
 }
 
+.avatar-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.scene-orb,
+.scene-star {
+  position: absolute;
+  display: block;
+}
+
+.scene-orb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  filter: blur(2px);
+  opacity: 0.65;
+}
+
+.orb-left {
+  top: 18px;
+  left: 12px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.55), rgba(251, 191, 36, 0));
+  animation: orb-float 5.4s ease-in-out infinite;
+}
+
+.orb-right {
+  top: 30px;
+  right: 10px;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.55), rgba(167, 139, 250, 0));
+  animation: orb-float 6.1s ease-in-out infinite reverse;
+}
+
+.scene-star {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+}
+
+.star-one {
+  top: 26px;
+  right: 28px;
+  animation: sparkle 3.8s ease-in-out infinite;
+}
+
+.star-two {
+  top: 40px;
+  left: 26px;
+  animation: sparkle 4.4s ease-in-out infinite 0.6s;
+}
+
+.character-body {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 102px;
+  height: 64px;
+  margin-left: -51px;
+}
+
+.body-shadow {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(96, 120, 109, 0.12);
+  filter: blur(8px);
+}
+
+.shoulder,
+.mini-shoulder {
+  position: absolute;
+  bottom: 0;
+  width: 54px;
+  height: 38px;
+  background: linear-gradient(180deg, #7da68f 0%, #668a76 100%);
+}
+
+.shoulder-left {
+  left: 0;
+  border-radius: 26px 16px 18px 20px;
+  transform: rotate(6deg);
+}
+
+.shoulder-right {
+  right: 0;
+  border-radius: 16px 26px 20px 18px;
+  transform: rotate(-6deg);
+}
+
+.neck,
+.mini-neck {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 18px;
+  height: 22px;
+  margin-left: -9px;
+  background: linear-gradient(180deg, #f3d5c8 0%, #e6bfae 100%);
+  border-radius: 10px;
+}
+
+.collar {
+  position: absolute;
+  top: 18px;
+  width: 26px;
+  height: 20px;
+  background: #f8fbf9;
+}
+
+.collar-left {
+  left: 27px;
+  border-radius: 0 0 16px 0;
+  transform: skewY(20deg);
+}
+
+.collar-right {
+  right: 27px;
+  border-radius: 0 0 0 16px;
+  transform: skewY(-20deg);
+}
+
+.character-head,
+.mini-character-head {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 78px;
+  height: 88px;
+  margin-left: -39px;
+  border-radius: 38px 38px 34px 34px;
+  background: linear-gradient(180deg, #f8ddd3 0%, #efc8b7 100%);
+  box-shadow: inset 0 -8px 14px rgba(220, 178, 158, 0.18);
+  overflow: hidden;
+}
+
+.mini-character-head {
+  top: 4px;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  border-radius: 14px;
+}
+
+.hair-back,
+.hair-base,
+.hair-top,
+.hair-bang {
+  position: absolute;
+  display: block;
+  background: linear-gradient(180deg, #5b463d 0%, #3c2c26 100%);
+}
+
+.hair-back {
+  inset: -4px -2px 18px -2px;
+  border-radius: 40px 40px 28px 28px;
+  opacity: 0.9;
+}
+
+.hair-base {
+  inset: 0 0 42% 0;
+  border-radius: 38px 38px 24px 24px;
+}
+
+.hair-top {
+  top: -4px;
+  left: 8px;
+  right: 8px;
+  height: 18px;
+  border-radius: 18px 18px 10px 10px;
+}
+
+.hair-bang {
+  top: 10px;
+  width: 20px;
+  height: 22px;
+  border-radius: 0 0 18px 18px;
+}
+
+.bang-left {
+  left: 6px;
+  transform: rotate(14deg);
+}
+
+.bang-center {
+  left: 50%;
+  margin-left: -10px;
+  height: 18px;
+}
+
+.bang-right {
+  right: 6px;
+  transform: rotate(-14deg);
+}
+
+.ear {
+  position: absolute;
+  top: 42px;
+  width: 12px;
+  height: 18px;
+  background: #efc8b7;
+  border-radius: 999px;
+}
+
+.ear-left {
+  left: -5px;
+}
+
+.ear-right {
+  right: -5px;
+}
+
+.message-emotion-badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.badge-steady {
+  background: rgba(123, 158, 137, 0.1);
+  color: var(--ease-accent-dark);
+}
+
+.badge-listening {
+  background: rgba(147, 197, 253, 0.18);
+  color: #1d4ed8;
+}
+
+.badge-soothing {
+  background: rgba(196, 181, 253, 0.22);
+  color: #6d28d9;
+}
+
+.badge-encouraging {
+  background: rgba(134, 239, 172, 0.24);
+  color: #15803d;
+}
+
+.badge-warm {
+  background: rgba(251, 191, 36, 0.2);
+  color: #b45309;
+}
+
+.badge-celebrating {
+  background: rgba(249, 168, 212, 0.24);
+  color: #be185d;
+}
+
+.badge-alert {
+  background: rgba(252, 165, 165, 0.24);
+  color: #b91c1c;
+}
+
 /* ========== 输入区域 (复刻原型) ========== */
 .chat-input-area {
-  padding: 24px;
+  padding: 22px 24px 24px;
   background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(20px);
   border-top: 1px solid rgba(255, 255, 255, 0.6);
   flex-shrink: 0;
+  border-radius: 0 0 24px 24px;
 }
 
 .input-wrapper {
@@ -1739,6 +2486,203 @@ const scrollToBottom = () => {
   animation-delay: 0.4s;
 }
 
+.face {
+  position: absolute;
+  display: block;
+}
+
+.face-eye {
+  top: 38%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #37514b;
+  transition: transform 0.25s ease, height 0.25s ease, border-radius 0.25s ease;
+}
+
+.left-eye {
+  left: 28%;
+}
+
+.right-eye {
+  right: 28%;
+}
+
+.face-mouth {
+  left: 50%;
+  bottom: 24%;
+  width: 18px;
+  height: 8px;
+  margin-left: -9px;
+  border-bottom: 3px solid #37514b;
+  border-radius: 0 0 16px 16px;
+  transition: all 0.25s ease;
+}
+
+.face-blush {
+  top: 54%;
+  width: 10px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(244, 114, 182, 0.22);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.left-blush {
+  left: 18%;
+}
+
+.right-blush {
+  right: 18%;
+}
+
+.face-highlight {
+  top: 18px;
+  right: 14px;
+  width: 16px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.34);
+  filter: blur(1px);
+}
+
+.emotion-listening .face-eye {
+  height: 6px;
+  border-radius: 999px;
+}
+
+.emotion-listening .face-mouth {
+  width: 14px;
+  border-bottom-width: 2px;
+}
+
+.emotion-soothing .face-mouth {
+  width: 18px;
+  height: 10px;
+  border-bottom-width: 3px;
+  border-radius: 0 0 18px 18px;
+}
+
+.emotion-soothing .face-blush,
+.emotion-warm .face-blush,
+.emotion-celebrating .face-blush {
+  opacity: 1;
+}
+
+.emotion-encouraging .face-mouth,
+.emotion-celebrating .face-mouth {
+  width: 18px;
+  height: 11px;
+  border-bottom-width: 3px;
+}
+
+.emotion-celebrating .face-eye {
+  height: 4px;
+  border-radius: 999px;
+}
+
+.emotion-alert .face-eye {
+  top: 36%;
+  height: 9px;
+}
+
+.emotion-alert .face-mouth {
+  width: 12px;
+  height: 4px;
+  border-bottom-width: 2px;
+  border-radius: 0;
+}
+
+.emotion-steady .face-mouth,
+.emotion-warm .face-mouth {
+  width: 16px;
+}
+
+.presence-avatar .face-eye {
+  width: 8px;
+  height: 8px;
+}
+
+.presence-avatar .left-eye {
+  left: 25px;
+}
+
+.presence-avatar .right-eye {
+  right: 25px;
+}
+
+.presence-avatar .face-mouth {
+  bottom: 20px;
+}
+
+.avatar-agent .mini-character-body {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 30px;
+  height: 14px;
+  margin-left: -15px;
+}
+
+.avatar-agent .mini-shoulder {
+  width: 16px;
+  height: 10px;
+  bottom: 0;
+  background: linear-gradient(180deg, #7da68f 0%, #668a76 100%);
+}
+
+.avatar-agent .mini-neck {
+  top: 0;
+  width: 6px;
+  height: 8px;
+  margin-left: -3px;
+}
+
+.avatar-agent .face-eye {
+  top: 38%;
+  width: 4px;
+  height: 4px;
+}
+
+.avatar-agent .left-eye {
+  left: 9px;
+}
+
+.avatar-agent .right-eye {
+  right: 9px;
+}
+
+.avatar-agent .face-mouth {
+  bottom: 6px;
+  width: 8px;
+  height: 4px;
+  margin-left: -4px;
+  border-bottom-width: 2px;
+}
+
+.avatar-agent .face-blush {
+  top: 16px;
+  width: 4px;
+  height: 3px;
+}
+
+.avatar-agent .left-blush {
+  left: 4px;
+}
+
+.avatar-agent .right-blush {
+  right: 4px;
+}
+
+.speaking {
+  animation: avatar-speak 1s ease-in-out infinite;
+}
+
+.thinking .face-eye {
+  animation: blink-think 1.4s ease-in-out infinite;
+}
+
 @keyframes typing {
   0%,
   60%,
@@ -1809,6 +2753,41 @@ const scrollToBottom = () => {
     max-width: 90%;
   }
 
+  .chat-header-simple {
+    padding: 16px 18px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-main {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .agent-presence {
+    width: 100%;
+  }
+
+  .chat-main-content {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .companion-rail {
+    width: 100%;
+    order: -1;
+  }
+
+  .companion-panel {
+    position: static;
+  }
+
   .input-footer {
     flex-direction: column;
   }
@@ -1820,6 +2799,66 @@ const scrollToBottom = () => {
 
   .voice-actions > * {
     flex: 1 1 100%;
+  }
+}
+
+@keyframes companion-aura {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.95;
+  }
+}
+
+@keyframes orb-float {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.08);
+  }
+}
+
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes avatar-speak {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+@keyframes blink-think {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  45% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(0.2);
+  }
+  55% {
+    transform: scaleY(0.5);
   }
 }
 </style>
