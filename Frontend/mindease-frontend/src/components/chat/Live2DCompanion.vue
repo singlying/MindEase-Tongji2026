@@ -16,8 +16,6 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import * as PIXI from "pixi.js";
-import { Live2DModel, MotionPriority } from "pixi-live2d-display/cubism4";
 
 type AgentEmotion =
   | "steady"
@@ -45,14 +43,15 @@ const props = defineProps<{
   motionSeed: number;
 }>();
 
-type Live2DModelInstance = InstanceType<typeof Live2DModel>;
-
 const stageRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const model = ref<Live2DModelInstance | null>(null);
-const app = ref<PIXI.Application | null>(null);
+const model = ref<any>(null);
+const app = ref<any>(null);
 const resizeObserver = ref<ResizeObserver | null>(null);
 let expressionPhase = 0;
+let motionStopTimer: number | null = null;
+let pixiModule: any = null;
+let live2dModule: any = null;
 
 const focusTargets: Record<AgentEmotion, { x: number; y: number }> = {
   steady: { x: 0, y: 0.05 },
@@ -75,12 +74,12 @@ type MotionManagerLike = {
   };
 };
 
-const motionPlan: Record<MotionCue, { group: string; index: number; priority?: MotionPriority; durationMs: number }> = {
-  neutral: { group: "Idle", index: 2, priority: MotionPriority.NORMAL, durationMs: 4300 },
-  concern: { group: "Idle", index: 8, priority: MotionPriority.NORMAL, durationMs: 4300 },
-  encouragement: { group: "Idle", index: 6, priority: MotionPriority.NORMAL, durationMs: 2200 },
-  surprise: { group: "Idle", index: 5, priority: MotionPriority.NORMAL, durationMs: 2000 },
-  shy: { group: "TapBody", index: 0, priority: MotionPriority.FORCE, durationMs: 4500 },
+const motionPlan: Record<MotionCue, { group: string; index: number; priority?: number; durationMs: number }> = {
+  neutral: { group: "Idle", index: 2, priority: 3, durationMs: 4300 },
+  concern: { group: "Idle", index: 8, priority: 3, durationMs: 4300 },
+  encouragement: { group: "Idle", index: 6, priority: 3, durationMs: 2200 },
+  surprise: { group: "Idle", index: 5, priority: 3, durationMs: 2000 },
+  shy: { group: "TapBody", index: 0, priority: 3, durationMs: 4500 },
 };
 
 type ExpressionPreset = {
@@ -257,6 +256,58 @@ const setMirroredParameter = (coreModel: CoreModelLike, leftId: string, rightId:
   coreModel.setParameterValueById(rightId, value, 1);
 };
 
+const ensureCubismCoreLoaded = async () => {
+  const runtimeWindow = window as Window & {
+    Live2DCubismCore?: unknown;
+    __mindeaseCubismCorePromise?: Promise<void>;
+  };
+
+  if (runtimeWindow.Live2DCubismCore) {
+    return;
+  }
+
+  if (!runtimeWindow.__mindeaseCubismCorePromise) {
+    runtimeWindow.__mindeaseCubismCorePromise = new Promise<void>((resolve, reject) => {
+      const sources = [
+        "https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js",
+        "https://cdn.jsdelivr.net/npm/live2dcubismcore@1.0.2/live2dcubismcore.min.js",
+      ];
+
+      const loadAt = (index: number) => {
+        if (runtimeWindow.Live2DCubismCore) {
+          resolve();
+          return;
+        }
+        if (index >= sources.length) {
+          reject(new Error("Could not load Cubism 4 runtime."));
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = sources[index]!;
+        script.async = false;
+        script.onload = () => resolve();
+        script.onerror = () => loadAt(index + 1);
+        document.head.appendChild(script);
+      };
+
+      loadAt(0);
+    });
+  }
+
+  await runtimeWindow.__mindeaseCubismCorePromise;
+};
+
+const ensureLive2DModulesLoaded = async () => {
+  await ensureCubismCoreLoaded();
+  if (!pixiModule) {
+    pixiModule = await import("pixi.js");
+  }
+  if (!live2dModule) {
+    live2dModule = await import("pixi-live2d-display/cubism4");
+  }
+};
+
 const getMotionManager = (): MotionManagerLike | undefined => {
   return model.value?.internalModel?.motionManager as MotionManagerLike | undefined;
 };
@@ -271,8 +322,15 @@ const freezeMotionLoop = () => {
   motionManager.stopAllMotions();
 };
 
+const clearMotionStopTimer = () => {
+  if (motionStopTimer !== null) {
+    window.clearTimeout(motionStopTimer);
+    motionStopTimer = null;
+  }
+};
+
 const playMotionCue = async (cue: MotionCue) => {
-  if (!model.value) return;
+  if (!model.value || !live2dModule) return;
 
   const plan = motionPlan[cue];
   if (!plan) {
@@ -280,15 +338,19 @@ const playMotionCue = async (cue: MotionCue) => {
     return;
   }
 
+  clearMotionStopTimer();
+  freezeMotionLoop();
+
   try {
-    await model.value.motion(plan.group, plan.index, plan.priority ?? MotionPriority.NORMAL);
+    await model.value.motion(plan.group, plan.index, plan.priority ?? live2dModule.MotionPriority.NORMAL);
   } catch (_error) {
     freezeMotionLoop();
     return;
   }
 
-  window.setTimeout(() => {
+  motionStopTimer = window.setTimeout(() => {
     freezeMotionLoop();
+    motionStopTimer = null;
   }, plan.durationMs);
 };
 
@@ -327,7 +389,12 @@ const applyExpressionParameters = (delta = 1) => {
 const initializeLive2D = async () => {
   if (!stageRef.value || !canvasRef.value) return;
 
-  (window as Window & { PIXI?: typeof PIXI }).PIXI = PIXI;
+  await ensureLive2DModulesLoaded();
+
+  const PIXI = pixiModule;
+  const { Live2DModel } = live2dModule;
+
+  (window as Window & { PIXI?: unknown }).PIXI = PIXI;
 
   const instance = new PIXI.Application({
     view: canvasRef.value,
@@ -340,7 +407,7 @@ const initializeLive2D = async () => {
   app.value = instance;
 
   const loadedModel = await Live2DModel.from("/live2d/Hiyori/Hiyori.model3.json");
-  model.value = loadedModel as Live2DModelInstance;
+  model.value = loadedModel;
   loadedModel.interactive = true;
   loadedModel.buttonMode = true;
 
@@ -354,9 +421,8 @@ const initializeLive2D = async () => {
   applyModelLayout();
   applyFocus(true);
   freezeMotionLoop();
-  app.value?.ticker.add((deltaTime) => {
+  app.value?.ticker.add((deltaTime: number) => {
     applyExpressionParameters(deltaTime);
-    freezeMotionLoop();
   });
   applyExpressionParameters();
 
@@ -368,7 +434,11 @@ const initializeLive2D = async () => {
 
 onMounted(async () => {
   await nextTick();
-  await initializeLive2D();
+  try {
+    await initializeLive2D();
+  } catch (error) {
+    console.error("Failed to initialize Live2D companion:", error);
+  }
 });
 
 watch(
@@ -403,6 +473,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  clearMotionStopTimer();
   resizeObserver.value?.disconnect();
   resizeObserver.value = null;
 
