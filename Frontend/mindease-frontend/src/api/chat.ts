@@ -1,202 +1,122 @@
+// 前端A负责：AI 咨询接口与类型定义
+import { chatMockService } from "@/mock/chat";
+
 import request from "./request";
-import type { ApiResponse } from "./request";
 
-/**
- * AI聊天模块API
- * 对齐后端VO定义
- */
+const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false";
 
-// ========== VO类型定义 ==========
+export type ChatSender = "user" | "ai";
 
-/**
- * 会话创建响应
- */
-export interface ChatSessionCreateVO {
+export interface ChatSession {
   sessionId: string;
+  sessionTitle: string;
+  createTime: string;
+  updatedTime: string;
 }
 
-/**
- * 会话信息
- */
-export interface ChatSessionVO {
+export interface ChatMessage {
+  id: string;
   sessionId: string;
-  sessionTitle: string; // 注意：后端VO是驼峰命名，不是session_title
-  createTime: string; // ISO 8601格式: "2023-10-27T16:00:00"
-}
-
-/**
- * 会话列表响应
- */
-export interface ChatSessionListVO {
-  total: number;
-  sessions: ChatSessionVO[];
-}
-
-/**
- * 聊天消息
- */
-export interface ChatMessageVO {
-  sender: string; // "user" | "ai" (后端返回小写)
+  sender: ChatSender;
   content: string;
-  createTime: string; // ISO 8601格式
+  createTime: string;
 }
 
-/**
- * 历史记录响应
- */
-export interface ChatHistoryVO {
+export interface ChatSessionListResponse {
+  total: number;
+  sessions: ChatSession[];
+}
+
+export interface ChatHistoryResponse {
   sessionId: string;
-  messages: ChatMessageVO[];
+  messages: ChatMessage[];
 }
 
-/**
- * 删除会话响应
- */
-export interface ChatDeleteVO {
-  success: boolean;
+export interface ChatMessageParams {
+  sessionId: string;
+  content: string;
 }
 
-/**
- * 敏感词检测结果
- * 对齐后端 SensitiveWordCheckVO
- */
-export interface SensitiveWordCheckVO {
+export interface ChatReplyResponse {
+  session: ChatSession;
+  userMessage: ChatMessage;
+  aiMessage: ChatMessage;
+}
+
+export interface SensitiveWordResult {
   containsSensitiveWord: boolean;
   sensitiveWords: string[];
   originalText: string;
+  suggestion: string;
 }
 
-export interface SpeechTranscriptionVO {
-  text: string;
-  audioUrl: string;
-  format: string;
-}
+type ApiResult<T> = Promise<{ data: T }>;
 
-// ========== DTO类型定义 ==========
-
-/**
- * 发送消息请求
- */
-export interface ChatMessageSendDTO {
-  sessionId: string;
-  content: string;
-}
-
-// ========== API方法 ==========
-
-/**
- * 创建AI会话
- */
-export const createSession = () => {
-  return request.post<ApiResponse<ChatSessionCreateVO>>("/chat/session");
-};
-
-/**
- * 获取会话列表
- * @param limit 限制数量，默认20
- */
-export const getSessionList = (limit: number = 20) => {
-  return request.get<ApiResponse<ChatSessionListVO>>("/chat/sessions", {
-    params: { limit },
-  });
-};
-
-/**
- * 发送消息（SSE流式响应）
- * 注意：此方法返回ReadableStream，需要特殊处理
- * @param dto 消息发送DTO
- * @returns ReadableStream用于接收流式文本
- */
-export const sendMessage = async (
-  dto: ChatMessageSendDTO
-): Promise<ReadableStream<Uint8Array>> => {
-  const token = localStorage.getItem("token");
-  const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
-  const response = await fetch(`${baseURL}/chat/message`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      token: token || "", // 注意：后端使用token请求头，不需要Bearer前缀
-    },
-    body: JSON.stringify(dto),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+export function createChatSession(): ApiResult<ChatSession> {
+  if (USE_MOCK) {
+    return chatMockService.createChatSession();
   }
 
-  if (!response.body) {
-    throw new Error("No response body");
+  return request.post("/chat/session") as unknown as ApiResult<ChatSession>;
+}
+
+export function getChatSessionList(
+  limit = 20,
+): ApiResult<ChatSessionListResponse> {
+  if (USE_MOCK) {
+    return chatMockService.getChatSessionList(limit);
   }
 
-  return response.body;
-};
-
-/**
- * 获取会话历史记录
- * @param sessionId 会话ID
- * @param limit 限制数量，默认50
- */
-export const getHistory = (sessionId: string, limit: number = 50) => {
-  return request.get<ApiResponse<ChatHistoryVO>>(`/chat/history/${sessionId}`, {
+  return request.get("/chat/sessions", {
     params: { limit },
-  });
-};
+  }) as unknown as ApiResult<ChatSessionListResponse>;
+}
 
-/**
- * 删除会话
- * @param sessionId 会话ID
- */
-export const deleteSession = (sessionId: string) => {
-  return request.delete<ApiResponse<ChatDeleteVO>>(
-    `/chat/session/${sessionId}`
-  );
-};
+export function getChatHistory(
+  sessionId: string,
+  limit = 50,
+): ApiResult<ChatHistoryResponse> {
+  if (USE_MOCK) {
+    return chatMockService.getChatHistory(sessionId, limit);
+  }
 
-/**
- * 检测聊天内容中的敏感词（例如自杀/自残相关表达）
- */
-export const checkSensitiveWords = (dto: ChatMessageSendDTO) => {
-  return request.post<ApiResponse<SensitiveWordCheckVO>>(
+  return request.get(`/chat/history/${sessionId}`, {
+    params: { limit },
+  }) as unknown as ApiResult<ChatHistoryResponse>;
+}
+
+export function sendChatMessage(
+  payload: ChatMessageParams,
+): ApiResult<ChatReplyResponse> {
+  if (USE_MOCK) {
+    return chatMockService.sendChatMessage(payload);
+  }
+
+  return request.post("/chat/message", payload) as unknown as ApiResult<ChatReplyResponse>;
+}
+
+export function checkSensitiveWords(
+  payload: ChatMessageParams,
+): ApiResult<SensitiveWordResult> {
+  if (USE_MOCK) {
+    return chatMockService.checkSensitiveWords(payload);
+  }
+
+  return request.post(
     "/chat/check-sensitive-words",
-    dto
-  );
-};
+    payload,
+  ) as unknown as ApiResult<SensitiveWordResult>;
+}
 
-export const transcribeAudio = async (file: Blob): Promise<SpeechTranscriptionVO> => {
-  const formData = new FormData();
-  formData.append("file", file, "speech.webm");
-
-  const response = (await request.post(
-    "/chat/asr",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  )) as any;
-
-  return response.data as SpeechTranscriptionVO;
-};
-
-export const synthesizeSpeech = async (text: string): Promise<Blob> => {
-  const token = localStorage.getItem("token");
-  const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
-  const response = await fetch(`${baseURL}/chat/tts`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      token: token || "",
-    },
-    body: JSON.stringify({ text }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+export function deleteChatSession(sessionId: string): ApiResult<{ success: boolean }> {
+  if (USE_MOCK) {
+    return chatMockService.deleteChatSession(sessionId);
   }
 
-  return await response.blob();
-};
+  return request.delete(`/chat/session/${sessionId}`) as unknown as ApiResult<{
+    success: boolean;
+  }>;
+}
+
+export const createChatSessionApi = createChatSession;
+export const sendChatMessageApi = sendChatMessage;
