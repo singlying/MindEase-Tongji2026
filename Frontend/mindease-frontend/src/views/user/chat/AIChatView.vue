@@ -326,14 +326,37 @@
           <aside class="companion-rail">
             <div class="companion-panel">
               <Live2DCompanion
-                :emotion="agentEmotionState"
+                :emotion="displayedAgentEmotionState"
                 :speaking="isPlayingAudio"
                 :thinking="isAITyping"
-                :title="agentEmotionLabel"
-                :description="agentEmotionDescription"
-                :motion-cue="agentMotionCue"
-                :motion-seed="agentMotionSeed"
+                :title="displayedAgentEmotionLabel"
+                :description="displayedAgentEmotionDescription"
+                :motion-cue="displayedAgentMotionCue"
+                :motion-seed="displayedAgentMotionSeed"
               />
+              <div class="motion-debug-panel">
+                <span class="motion-debug-label">动作调试</span>
+                <div class="motion-debug-buttons">
+                  <button
+                    v-for="option in motionDebugOptions"
+                    :key="option.cue"
+                    type="button"
+                    class="motion-debug-btn"
+                    :class="{ active: debugMotionCue === option.cue }"
+                    @click="applyDebugMotion(option.cue)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="motion-debug-clear"
+                  :disabled="!debugMotionCue"
+                  @click="clearDebugMotion"
+                >
+                  恢复自动
+                </button>
+              </div>
             </div>
           </aside>
         </div>
@@ -468,6 +491,8 @@ const isDirectVoiceConversation = ref(false);
 const isConversationModeEnabled = ref(false);
 const recordingIntent = ref<"manual" | "direct" | "conversation" | null>(null);
 const agentMotionSeed = ref(0);
+const debugMotionCue = ref<AgentMotionCue | null>(null);
+const responseMotionCue = ref<AgentMotionCue | null>(null);
 
 // LocalStorage Key
 const STORAGE_KEY = "mindease_current_session_id";
@@ -527,6 +552,7 @@ let speechRecognition: BrowserSpeechRecognition | null = null;
 let mediaRecorder: MediaRecorder | null = null;
 let recordingChunks: Blob[] = [];
 let currentAudio: HTMLAudioElement | null = null;
+let responseMotionTimer: number | null = null;
 
 const inferEmotionFromText = (
   content: string,
@@ -564,6 +590,41 @@ const inferEmotionFromText = (
   return sender === "user" ? "listening" : "steady";
 };
 
+const getEmotionFromMotionCue = (
+  motionCue: AgentMotionCue,
+  sender: "ai" | "user" = "ai"
+): AgentEmotion => {
+  if (sender === "user") {
+    return "listening";
+  }
+
+  switch (motionCue) {
+    case "neutral":
+      return "steady";
+    case "concern":
+      return "soothing";
+    case "encouragement":
+      return "encouraging";
+    case "surprise":
+      return "celebrating";
+    case "shy":
+      return "warm";
+    default:
+      return "steady";
+  }
+};
+
+const motionDebugOptions: Array<{
+  cue: AgentMotionCue;
+  label: string;
+}> = [
+  { cue: "neutral", label: "m03 日常" },
+  { cue: "concern", label: "m10 关心" },
+  { cue: "encouragement", label: "m08 鼓励" },
+  { cue: "surprise", label: "m07 惊讶" },
+  { cue: "shy", label: "m04 害羞" },
+];
+
 const parseMotionTaggedContent = (rawContent: string): MotionParseResult => {
   const trimmedStart = rawContent.replace(/^\s*/, "");
   const directiveMatch = trimmedStart.match(
@@ -597,25 +658,41 @@ const createMessage = (
   sender: "ai" | "user",
   content: string,
   createTime = new Date().toISOString()
-): ChatViewMessage => ({
-  sender,
-  content,
-  createTime,
-  emotion: inferEmotionFromText(content, sender),
-  motionCue:
-    sender === "ai" && content === GREETING_MESSAGE
-      ? "shy"
-      : "neutral",
-});
+): ChatViewMessage => {
+  const motionCue: AgentMotionCue =
+    sender === "ai" && content === GREETING_MESSAGE ? "shy" : "neutral";
+
+  return {
+    sender,
+    content,
+    createTime,
+    emotion:
+      sender === "ai"
+        ? getEmotionFromMotionCue(motionCue, sender)
+        : inferEmotionFromText(content, sender),
+    motionCue: sender === "ai" && !content ? undefined : motionCue,
+  };
+};
+
+const latestAiMessage = computed(() =>
+  [...messages.value].reverse().find((message) => message.sender === "ai")
+);
 
 const agentEmotionState = computed<AgentEmotion>(() => {
-  if (isAITyping.value) return "listening";
+  const lastAiMessage = latestAiMessage.value;
+  if (!lastAiMessage) {
+    return isAITyping.value ? "listening" : "steady";
+  }
 
-  const lastAiMessage = [...messages.value]
-    .reverse()
-    .find((message) => message.sender === "ai" && message.content?.trim());
+  if (
+    isAITyping.value &&
+    !lastAiMessage.content?.trim() &&
+    !lastAiMessage.motionCue
+  ) {
+    return "listening";
+  }
 
-  return lastAiMessage?.emotion || "steady";
+  return lastAiMessage.emotion || "steady";
 });
 
 const agentEmotionLabel = computed(
@@ -631,12 +708,59 @@ const agentEmotionChip = computed(
 const getEmotionBadge = (emotion: AgentEmotion) => EMOTION_COPY[emotion].badge;
 
 const agentMotionCue = computed<AgentMotionCue>(() => {
-  const lastAiMessage = [...messages.value]
-    .reverse()
-    .find((message) => message.sender === "ai" && message.content?.trim());
-
-  return lastAiMessage?.motionCue || "neutral";
+  return latestAiMessage.value?.motionCue || "neutral";
 });
+
+const displayedAgentMotionCue = computed<AgentMotionCue>(
+  () => debugMotionCue.value || responseMotionCue.value || agentMotionCue.value
+);
+
+const displayedAgentEmotionState = computed<AgentEmotion>(() =>
+  debugMotionCue.value
+    ? getEmotionFromMotionCue(debugMotionCue.value, "ai")
+    : responseMotionCue.value
+    ? getEmotionFromMotionCue(responseMotionCue.value, "ai")
+    : agentEmotionState.value
+);
+
+const displayedAgentEmotionLabel = computed(
+  () => EMOTION_COPY[displayedAgentEmotionState.value].label
+);
+
+const displayedAgentEmotionDescription = computed(
+  () => EMOTION_COPY[displayedAgentEmotionState.value].description
+);
+
+const displayedAgentMotionSeed = computed(
+  () => agentMotionSeed.value + (debugMotionCue.value ? 1000 : 0)
+);
+
+const applyDebugMotion = (cue: AgentMotionCue) => {
+  debugMotionCue.value = cue;
+  agentMotionSeed.value += 1;
+};
+
+const clearDebugMotion = () => {
+  debugMotionCue.value = null;
+  agentMotionSeed.value += 1;
+};
+
+const clearResponseMotionTimer = () => {
+  if (responseMotionTimer !== null) {
+    window.clearTimeout(responseMotionTimer);
+    responseMotionTimer = null;
+  }
+};
+
+const applyResponseMotion = (cue: AgentMotionCue) => {
+  responseMotionCue.value = cue;
+  agentMotionSeed.value += 1;
+  clearResponseMotionTimer();
+  responseMotionTimer = window.setTimeout(() => {
+    responseMotionCue.value = null;
+    responseMotionTimer = null;
+  }, 5000);
+};
 
 const isBusyWithVoice = computed(
   () => isSending.value || isRecording.value || isTranscribing.value
@@ -997,6 +1121,7 @@ const sendChatContent = async (
     const reader = stream.getReader();
     const decoder = new TextDecoder();
     let rawAiContent = "";
+    let lastParsedMotionCue: AgentMotionCue | null = null;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -1007,12 +1132,16 @@ const sendChatContent = async (
       const parsed = parseMotionTaggedContent(rawAiContent);
       if (messages.value[aiMessageIndex]) {
         messages.value[aiMessageIndex].motionCue = parsed.motionCue;
+        messages.value[aiMessageIndex].emotion = getEmotionFromMotionCue(
+          parsed.motionCue,
+          "ai"
+        );
+        if (!parsed.waitingForDirective && lastParsedMotionCue !== parsed.motionCue) {
+          applyResponseMotion(parsed.motionCue);
+          lastParsedMotionCue = parsed.motionCue;
+        }
         if (!parsed.waitingForDirective) {
           messages.value[aiMessageIndex].content = parsed.content;
-          messages.value[aiMessageIndex].emotion = inferEmotionFromText(
-            messages.value[aiMessageIndex].content,
-            "ai"
-          );
         }
       }
 
@@ -1027,9 +1156,14 @@ const sendChatContent = async (
       messages.value[aiMessageIndex].content = aiContent;
       messages.value[aiMessageIndex].motionCue =
         aiContent === GREETING_MESSAGE ? "shy" : parsedFinal.motionCue;
-      messages.value[aiMessageIndex].emotion = inferEmotionFromText(aiContent, "ai");
+      messages.value[aiMessageIndex].emotion = getEmotionFromMotionCue(
+        messages.value[aiMessageIndex].motionCue || "neutral",
+        "ai"
+      );
     }
-    agentMotionSeed.value += 1;
+    if (lastParsedMotionCue !== (messages.value[aiMessageIndex]?.motionCue || "neutral")) {
+      applyResponseMotion(messages.value[aiMessageIndex]?.motionCue || "neutral");
+    }
     if (aiContent && (autoSpeakEnabled.value || options?.forceAutoSpeak)) {
       await handleSpeakText(aiContent);
     }
@@ -2401,6 +2535,66 @@ const scrollToBottom = () => {
 .auto-speak-toggle.active {
   background: rgba(123, 158, 137, 0.16);
   color: var(--ease-accent-dark);
+}
+
+.motion-debug-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(31, 38, 135, 0.06);
+}
+
+.motion-debug-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+}
+
+.motion-debug-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.motion-debug-btn,
+.motion-debug-clear {
+  height: 34px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.motion-debug-btn {
+  background: rgba(123, 158, 137, 0.1);
+  color: var(--ease-accent-dark);
+}
+
+.motion-debug-btn.active {
+  background: linear-gradient(135deg, rgba(123, 158, 137, 0.9), rgba(94, 130, 109, 0.95));
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(123, 158, 137, 0.22);
+}
+
+.motion-debug-clear {
+  align-self: flex-start;
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--gray-500);
+}
+
+.motion-debug-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Markdown样式 */
