@@ -1,310 +1,504 @@
-<!-- 前端A负责：测评答题页 -->
-<script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { ElMessage, ElMessageBox } from "element-plus";
-
-import type { ScaleDetail } from "@/api/assessment";
-import { getScaleDetail, submitAssessment } from "@/api/assessment";
-import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
-
-const route = useRoute();
-const router = useRouter();
-
-const loading = ref(false);
-const submitting = ref(false);
-const detail = ref<ScaleDetail | null>(null);
-const currentIndex = ref(0);
-const answers = ref<Record<number, number>>({});
-
-const scaleKey = computed(() => String(route.params.scaleKey || ""));
-const currentQuestion = computed(() => detail.value?.questions[currentIndex.value]);
-const totalQuestions = computed(() => detail.value?.questions.length ?? 0);
-const answeredCount = computed(() => Object.keys(answers.value).length);
-const progress = computed(() => {
-  if (!totalQuestions.value) {
-    return 0;
-  }
-
-  return Math.round(((currentIndex.value + 1) / totalQuestions.value) * 100);
-});
-const selectedScore = computed(() => {
-  const question = currentQuestion.value;
-  return question ? answers.value[question.id] : undefined;
-});
-const canSubmit = computed(() => answeredCount.value === totalQuestions.value);
-
-async function loadDetail() {
-  loading.value = true;
-
-  try {
-    const response = await getScaleDetail(scaleKey.value);
-    detail.value = response.data;
-  } catch {
-    ElMessage.error("测评内容加载失败，请稍后再试");
-    router.push("/assessment");
-  } finally {
-    loading.value = false;
-  }
-}
-
-function selectOption(score: number) {
-  const question = currentQuestion.value;
-
-  if (!question) {
-    return;
-  }
-
-  answers.value[question.id] = score;
-}
-
-function prevQuestion() {
-  if (currentIndex.value > 0) {
-    currentIndex.value -= 1;
-  }
-}
-
-function nextQuestion() {
-  if (selectedScore.value === undefined) {
-    ElMessage.warning("请先选择一个答案");
-    return;
-  }
-
-  if (currentIndex.value < totalQuestions.value - 1) {
-    currentIndex.value += 1;
-  }
-}
-
-async function handleBack() {
-  if (answeredCount.value === 0) {
-    router.push("/assessment");
-    return;
-  }
-
-  try {
-    await ElMessageBox.confirm("当前测评尚未提交，确认返回列表吗？", "提示", {
-      confirmButtonText: "确认返回",
-      cancelButtonText: "继续作答",
-      type: "warning",
-    });
-    router.push("/assessment");
-  } catch {
-    // 用户继续作答
-  }
-}
-
-async function handleSubmit() {
-  if (!detail.value || !canSubmit.value) {
-    ElMessage.warning("请完成所有题目后再提交");
-    return;
-  }
-
-  submitting.value = true;
-
-  try {
-    const response = await submitAssessment({
-      scaleKey: detail.value.scaleKey,
-      answers: detail.value.questions.map((question) => ({
-        questionId: question.id,
-        score: answers.value[question.id]!,
-      })),
-    });
-
-    ElMessage.success("测评已提交");
-    router.push(`/assessment/result/${response.data.recordId}`);
-  } catch {
-    ElMessage.error("提交失败，请稍后再试");
-  } finally {
-    submitting.value = false;
-  }
-}
-
-onMounted(() => {
-  loadDetail();
-});
-</script>
-
 <template>
-  <div class="assessment-detail-page">
-    <LoadingSpinner v-if="loading" text="正在加载测评内容" />
-
-    <section v-else-if="detail && currentQuestion" class="answer-card glass-card">
-      <header class="answer-head">
-        <el-button plain @click="handleBack">返回</el-button>
-        <div class="head-center">
-          <div class="eyebrow">{{ detail.title }}</div>
-          <h2>{{ currentQuestion.text }}</h2>
-          <p>{{ detail.instruction }}</p>
+  <div class="assessment-detail">
+    <div v-loading="loading" class="assessment-container glass-panel">
+      <!-- 头部导航 -->
+      <div class="assessment-header">
+        <button @click="handleBack" class="back-btn">
+          <i class="fas fa-arrow-left"></i>
+          返回
+        </button>
+        <div class="header-info">
+          <h2 class="scale-title">{{ scaleDetail?.title }}</h2>
+          <p class="progress-text">
+            问题 <span class="current">{{ currentQuestion + 1 }}</span> /
+            {{ totalQuestions }}
+          </p>
         </div>
-        <div class="question-count">
-          {{ currentIndex + 1 }} / {{ totalQuestions }}
-        </div>
-      </header>
-
-      <el-progress :percentage="progress" :show-text="false" />
-
-      <div class="options-list">
-        <button
-          v-for="(option, index) in currentQuestion.options"
-          :key="option.label"
-          :class="['option-item', { selected: selectedScore === option.score }]"
-          @click="selectOption(option.score)"
-        >
-          <span class="option-code">{{ String.fromCharCode(65 + index) }}</span>
-          <span>{{ option.label }}</span>
+        <button class="info-btn">
+          <i class="fas fa-info-circle"></i>
         </button>
       </div>
 
-      <footer class="answer-footer">
-        <el-button :disabled="currentIndex === 0" @click="prevQuestion">
-          上一题
-        </el-button>
+      <!-- 进度条 -->
+      <div class="progress-bar-container">
+        <div
+          class="progress-bar-fill"
+          :style="{ width: progressPercent + '%' }"
+        ></div>
+      </div>
 
-        <div class="answered-state">
-          已完成 {{ answeredCount }} / {{ totalQuestions }}
+      <!-- 问题区域 -->
+      <div v-if="scaleDetail" class="question-area">
+        <div class="question-content">
+          <h3 class="question-text">
+            <span class="highlight">{{
+              scaleDetail.questions[currentQuestion]?.text
+            }}</span>
+          </h3>
+
+          <!-- 选项列表 -->
+          <div class="options-list">
+            <div
+              v-for="(option, index) in scaleDetail.questions[currentQuestion]
+                ?.options"
+              :key="index"
+              :class="[
+                'option-card',
+                { selected: selectedAnswer === option.score },
+              ]"
+              @click="selectOption(option.score)"
+            >
+              <div class="option-letter">
+                {{ String.fromCharCode(65 + index) }}
+              </div>
+              <span class="option-label">{{ option.label }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部导航 -->
+      <div class="assessment-footer">
+        <button
+          class="nav-btn prev-btn"
+          :disabled="currentQuestion === 0"
+          @click="prevQuestion"
+        >
+          <i class="fas fa-chevron-left"></i>
+          上一题
+        </button>
+
+        <!-- 进度点 -->
+        <div class="progress-dots">
+          <div
+            v-for="(_, index) in scaleDetail?.questions"
+            :key="index"
+            :class="[
+              'dot',
+              {
+                active: index === currentQuestion,
+                answered: answers[index] !== undefined,
+              },
+            ]"
+          ></div>
         </div>
 
-        <el-button
-          v-if="currentIndex < totalQuestions - 1"
-          type="primary"
-          :disabled="selectedScore === undefined"
+        <button
+          v-if="currentQuestion < totalQuestions - 1"
+          class="nav-btn next-btn"
+          :disabled="selectedAnswer === null"
           @click="nextQuestion"
         >
           下一题
-        </el-button>
-        <el-button
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <button
           v-else
-          type="primary"
-          :loading="submitting"
-          :disabled="!canSubmit"
-          @click="handleSubmit"
+          class="nav-btn submit-btn"
+          :disabled="!allAnswered"
+          @click="submitAssessment"
         >
           提交测评
-        </el-button>
-      </footer>
-    </section>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
+import {
+  getScaleDetail,
+  submitAssessment as submitAssessmentAPI,
+  type ScaleDetailVO,
+} from "@/api/assessment";
+
+const router = useRouter();
+const route = useRoute();
+
+const loading = ref(false);
+const scaleDetail = ref<ScaleDetailVO | null>(null);
+const currentQuestion = ref(0);
+const answers = ref<Record<number, number>>({});
+const selectedAnswer = ref<number | null>(null);
+
+const scaleKey = route.params.scaleKey as string;
+
+const totalQuestions = computed(() => scaleDetail.value?.questions.length || 0);
+const progressPercent = computed(
+  () => ((currentQuestion.value + 1) / totalQuestions.value) * 100
+);
+const allAnswered = computed(() => {
+  return Object.keys(answers.value).length === totalQuestions.value;
+});
+
+const fetchScaleDetail = async () => {
+  loading.value = true;
+  try {
+    const res = await getScaleDetail(scaleKey);
+    scaleDetail.value = res.data;
+
+    const currentAnswer = answers.value[currentQuestion.value];
+    if (currentAnswer !== undefined) {
+      selectedAnswer.value = currentAnswer;
+    }
+  } catch (error) {
+    console.error("获取量表详情失败:", error);
+    ElMessage.error("获取量表详情失败");
+    router.back();
+  } finally {
+    loading.value = false;
+  }
+};
+
+const selectOption = (score: number) => {
+  selectedAnswer.value = score;
+  answers.value[currentQuestion.value] = score;
+};
+
+const nextQuestion = () => {
+  if (selectedAnswer.value === null) {
+    ElMessage.warning("请选择一个选项");
+    return;
+  }
+
+  if (currentQuestion.value < totalQuestions.value - 1) {
+    currentQuestion.value++;
+    selectedAnswer.value = answers.value[currentQuestion.value] ?? null;
+  }
+};
+
+const prevQuestion = () => {
+  if (currentQuestion.value > 0) {
+    currentQuestion.value--;
+    const prevAnswer = answers.value[currentQuestion.value];
+    selectedAnswer.value = prevAnswer !== undefined ? prevAnswer : null;
+  }
+};
+
+const submitAssessment = async () => {
+  if (!allAnswered.value) {
+    ElMessage.warning("请完成所有题目");
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm("确认提交测评？提交后将无法修改答案。", "提示", {
+      confirmButtonText: "确认提交",
+      cancelButtonText: "再检查一下",
+      type: "info",
+    });
+
+    loading.value = true;
+
+    const answersArray = scaleDetail.value!.questions.map((q, index) => ({
+      questionId: q.id,
+      score: answers.value[index]!,
+    }));
+
+    const res = await submitAssessmentAPI({
+      scaleKey,
+      answers: answersArray,
+    });
+
+    ElMessage.success("测评提交成功");
+
+    router.push({
+      name: "AssessmentResult",
+      params: { recordId: res.data.recordId },
+    });
+  } catch (error: any) {
+    if (error !== "cancel") {
+      console.error("提交测评失败:", error);
+      ElMessage.error("提交测评失败");
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleBack = async () => {
+  if (Object.keys(answers.value).length > 0) {
+    try {
+      await ElMessageBox.confirm("测评尚未完成，确认退出吗？", "提示", {
+        confirmButtonText: "确认退出",
+        cancelButtonText: "继续测评",
+        type: "warning",
+      });
+      router.back();
+    } catch {
+      // 用户取消
+    }
+  } else {
+    router.back();
+  }
+};
+
+onMounted(() => {
+  fetchScaleDetail();
+});
+</script>
+
 <style scoped>
-.assessment-detail-page {
-  min-height: calc(100vh - 120px);
-  display: grid;
-  place-items: center;
+.assessment-detail {
+  min-height: 100vh;
+  padding: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.answer-card {
-  width: min(920px, 100%);
-  padding: 28px;
-  display: grid;
-  gap: 26px;
-}
-
-.answer-head {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 18px;
-  align-items: start;
-}
-
-.head-center {
-  text-align: center;
-}
-
-.eyebrow {
-  color: var(--ease-primary-dark);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-h2,
-p {
-  margin: 0;
-}
-
-h2 {
-  margin-top: 10px;
-  font-size: 26px;
-  line-height: 1.5;
-}
-
-p {
-  margin-top: 10px;
-  color: var(--ease-muted);
-}
-
-.question-count {
-  color: var(--ease-primary-dark);
-  font-weight: 800;
-}
-
-.options-list {
-  display: grid;
-  gap: 14px;
-}
-
-.option-item {
+.assessment-container {
+  max-width: 900px;
   width: 100%;
-  border: 1px solid rgba(123, 158, 137, 0.16);
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 16px;
-  padding: 16px 18px;
+  padding: var(--spacing-xl);
+  border-radius: 2rem;
+}
+
+/* 头部 */
+.assessment-header {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  color: var(--ease-text);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.option-item:hover,
-.option-item.selected {
-  border-color: var(--ease-primary);
-  background: rgba(123, 158, 137, 0.12);
-}
-
-.option-code {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: rgba(123, 158, 137, 0.12);
-  color: var(--ease-primary-dark);
-  font-weight: 800;
-  flex: 0 0 auto;
-}
-
-.option-item.selected .option-code {
-  background: var(--ease-primary);
-  color: #fff;
-}
-
-.answer-footer {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
 }
 
-.answered-state {
-  color: var(--ease-muted);
+.back-btn,
+.info-btn {
+  background: none;
+  border: none;
+  color: var(--gray-500);
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  transition: color 0.3s ease;
+}
+
+.back-btn:hover,
+.info-btn:hover {
+  color: var(--ease-dark);
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.header-info {
+  text-align: center;
+  flex: 1;
+}
+
+.scale-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ease-dark);
+  margin-bottom: var(--spacing-xs);
+}
+
+.progress-text {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.progress-text .current {
+  color: var(--ease-accent);
+  font-weight: 600;
+}
+
+/* 进度条 */
+.progress-bar-container {
+  height: 6px;
+  background: rgba(123, 158, 137, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-xl);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--ease-accent),
+    var(--ease-accent-dark)
+  );
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+/* 问题区域 */
+.question-area {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.question-content {
+  width: 100%;
+  max-width: 700px;
+}
+
+.question-text {
+  font-size: 1.75rem;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--ease-dark);
+  line-height: 1.6;
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.question-text .highlight {
+  color: var(--ease-warm);
+}
+
+/* 选项列表 */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.option-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: rgba(255, 255, 255, 0.4);
+  border: 2px solid transparent;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.option-card:hover {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: var(--ease-accent);
+}
+
+.option-card.selected {
+  background: rgba(123, 158, 137, 0.1);
+  border-color: var(--ease-accent);
+}
+
+.option-card.selected .option-letter {
+  background: var(--ease-accent);
+  color: white;
+  border-color: var(--ease-accent);
+}
+
+.option-letter {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--gray-300);
+  border-radius: 0.5rem;
   font-weight: 700;
+  color: var(--gray-500);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
-@media (max-width: 720px) {
-  .answer-card {
-    padding: 20px;
+.option-label {
+  font-size: 1.125rem;
+  color: var(--gray-700);
+}
+
+/* 底部导航 */
+.assessment-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.nav-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.prev-btn {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.prev-btn:hover:not(:disabled) {
+  background: var(--gray-200);
+}
+
+.next-btn,
+.submit-btn {
+  background: var(--ease-accent);
+  color: white;
+}
+
+.next-btn:hover:not(:disabled),
+.submit-btn:hover:not(:disabled) {
+  background: var(--ease-accent-dark);
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 进度点 */
+.progress-dots {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gray-300);
+  transition: all 0.3s ease;
+}
+
+.dot.active {
+  background: var(--ease-accent);
+  transform: scale(1.2);
+}
+
+.dot.answered {
+  background: var(--ease-accent);
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .assessment-detail {
+    padding: var(--spacing-md);
   }
 
-  .answer-head {
-    grid-template-columns: 1fr;
+  .assessment-container {
+    padding: var(--spacing-md);
   }
 
-  .head-center {
-    text-align: left;
+  .question-text {
+    font-size: 1.25rem;
+  }
+
+  .option-label {
+    font-size: 1rem;
+  }
+
+  .progress-dots {
+    display: none;
   }
 }
 </style>

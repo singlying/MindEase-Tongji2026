@@ -10,6 +10,7 @@ import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
@@ -40,10 +41,14 @@ public class AiConfiguration {
     @Autowired
     private ChatModel qwenChatModel;
 
+    @Autowired
+    private StreamingChatModel qwenStreamingChatModel;
+
     @Bean
     public ConsultantService consultantService() {
         return AiServices.builder(ConsultantService.class)
                 .chatModel(qwenChatModel)
+                .streamingChatModel(qwenStreamingChatModel)
                 .chatMemoryProvider(chatMemoryProvider())
                 .contentRetriever(contentRetriever())
                 .build();

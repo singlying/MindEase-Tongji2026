@@ -6,7 +6,7 @@
       </div>
       <h1 class="page-title">资质审核中</h1>
       <p class="page-subtitle">
-        您好，{{ userStore.profile?.nickname }}，欢迎加入MindEase！
+        您好，{{ userStore.userInfo?.nickname }}，欢迎加入MindEase！
       </p>
     </div>
 
@@ -207,6 +207,14 @@
               </div>
             </el-upload>
 
+            <!-- ⚠️ 【临时测试】直接输入图片URL（后期删除） -->
+            <el-input
+              v-model="auditForm.qualificationUrl"
+              placeholder="临时测试：直接输入图片URL"
+              class="temp-url-input"
+            >
+              <template #prepend>测试URL</template>
+            </el-input>
           </div>
         </el-form-item>
 
@@ -233,6 +241,14 @@
               </div>
             </el-upload>
 
+            <!-- ⚠️ 【临时测试】直接输入图片URL（后期删除） -->
+            <el-input
+              v-model="auditForm.idCardUrl"
+              placeholder="临时测试：直接输入图片URL（可选）"
+              class="temp-url-input"
+            >
+              <template #prepend>测试URL</template>
+            </el-input>
           </div>
         </el-form-item>
       </el-form>
@@ -531,25 +547,6 @@ onMounted(() => {
 
 <style scoped>
 .audit-pending {
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-2xl: 3rem;
-  --font-sm: 0.875rem;
-  --font-base: 1rem;
-  --font-lg: 1.125rem;
-  --font-xl: 1.25rem;
-  --font-3xl: 1.875rem;
-  --ease-dark: var(--ease-text);
-  --ease-accent: var(--ease-primary);
-  --gray-50: #f8fafc;
-  --gray-200: #e2e8f0;
-  --gray-300: #cbd5e1;
-  --gray-400: #94a3b8;
-  --gray-500: #64748b;
-  --gray-600: #475569;
-  --gray-700: #334155;
   min-height: 100vh;
   padding: var(--spacing-2xl);
   max-width: 900px;
@@ -783,6 +780,20 @@ onMounted(() => {
 .upload-text {
   font-size: 14px;
   color: var(--gray-500);
+}
+
+/* ⚠️ 【临时测试】URL输入框样式（后期删除） */
+.temp-url-input {
+  margin-top: 12px;
+  border: 2px dashed #ff9800;
+  border-radius: 8px;
+}
+
+.temp-url-input :deep(.el-input-group__prepend) {
+  background-color: #fff3e0;
+  color: #f57c00;
+  font-weight: 600;
+  border-color: #ff9800;
 }
 
 .hint-text {
