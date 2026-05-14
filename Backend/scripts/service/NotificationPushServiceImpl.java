@@ -166,37 +166,6 @@ public class NotificationPushServiceImpl implements NotificationPushService {
     }
 
     @Override
-    public Integer markBatchRead(Long userId, List<Long> notificationIds) {
-        if (notificationIds == null || notificationIds.isEmpty()) {
-            return 0;
-        }
-        log.info("批量标记已读, userId={}, 数量={}", userId, notificationIds.size());
-
-        // 校验归属权并过滤无效ID
-        List<Long> validIds = new ArrayList<>();
-        for (Long nid : notificationIds) {
-            try {
-                verifyNotificationOwnership(nid, userId);
-                validIds.add(nid);
-            } catch (BaseException e) {
-                log.warn("跳过无权操作的通知: id={}", nid);
-            }
-        }
-
-        if (validIds.isEmpty()) {
-            return 0;
-        }
-
-        notificationMapper.markBatchRead(userId, validIds);
-
-        // 批量更新缓存中的未读计数
-        decrementUnreadCacheByCount(userId, validIds.size());
-
-        log.info("批量标记已读完成, 成功{}条", validIds.size());
-        return validIds.size();
-    }
-
-    @Override
     public Integer markAllAsRead(Long userId) {
         Integer unreadCount = getUnreadCountFromCache(userId);
         if (unreadCount == null || unreadCount == 0) {
@@ -248,9 +217,6 @@ public class NotificationPushServiceImpl implements NotificationPushService {
         if (preferences.getEnableAiCare() != null) {
             existing.setEnableAiCare(preferences.getEnableAiCare());
         }
-        if (preferences.getEnableCommunityNotify() != null) {
-            existing.setEnableCommunityNotify(preferences.getEnableCommunityNotify());
-        }
         if (preferences.getQuietStartTime() != null) {
             existing.setQuietStartTime(preferences.getQuietStartTime());
         }
@@ -262,9 +228,6 @@ public class NotificationPushServiceImpl implements NotificationPushService {
         }
         if (preferences.getDailySummaryTime() != null) {
             existing.setDailySummaryTime(preferences.getDailySummaryTime());
-        }
-        if (preferences.getMaxDailyPushCount() != null) {
-            existing.setMaxDailyPushCount(preferences.getMaxDailyPushCount());
         }
 
         existing.setUpdateTime(LocalDateTime.now());
@@ -352,7 +315,6 @@ public class NotificationPushServiceImpl implements NotificationPushService {
                     .triggered(false)
                     .reason("cooldown")
                     .message(null)
-                    .sentAt(LocalDateTime.now())
                     .build();
         }
 
@@ -363,31 +325,14 @@ public class NotificationPushServiceImpl implements NotificationPushService {
                     .triggered(false)
                     .reason("disabled")
                     .message(null)
-                    .sentAt(LocalDateTime.now())
-                    .build();
-        }
-
-        // 检查是否在免打扰时段内
-        LocalTime now = LocalTime.now();
-        if (now.isAfter(pref.getQuietStartTime()) && now.isBefore(pref.getQuietEndTime())) {
-            log.info("当前处于免打扰时段，跳过AI关怀推送");
-            return AICareMessageVO.builder()
-                    .triggered(false)
-                    .reason("quiet_hours")
-                    .message(null)
-                    .sentAt(LocalDateTime.now())
                     .build();
         }
 
         // 收集用户的近期行为数据作为上下文
         String context = buildAICareContext(userId);
 
-        // 根据时间选择消息类型策略
-        String messageType = determineMessageType(now);
-
         // 调用AI服务生成关怀内容
         String aiMessage;
-        long startTime = System.currentTimeMillis();
         try {
             aiMessage = consultantService.analyzeMood(
                     "你是一个温暖专业的心理咨询助手。请根据以下用户数据生成一条简短（不超过100字）、"
@@ -402,17 +347,6 @@ public class NotificationPushServiceImpl implements NotificationPushService {
             aiMessage = generateFallbackCareMessage();
         }
 
-        long aiCostMs = System.currentTimeMillis() - startTime;
-
-        // 构建建议列表
-        List<String> suggestions = buildCareSuggestions(messageType);
-
-        // 构建元数据
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("aiModel", "mindease-care-v2");
-        metadata.put("generationTimeMs", aiCostMs);
-        metadata.put("contextLength", context.length());
-
         // 发送通知
         NotificationTemplateDTO careDTO = new NotificationTemplateDTO();
         careDTO.setType("AI_CARE");
@@ -423,20 +357,12 @@ public class NotificationPushServiceImpl implements NotificationPushService {
         // 设置冷却时间
         stringRedisTemplate.opsForValue().set(cooldownKey, "1", 6, TimeUnit.HOURS);
 
-        log.info("AI关怀推送成功, userId={}, 耗时{}ms", userId, aiCostMs);
-
-        // 根据内容分析情绪标签
-        String emotionTag = analyzeEmotionTag(context);
+        log.info("AI关怀推送成功, userId={}", userId);
 
         return AICareMessageVO.builder()
                 .triggered(true)
-                .reason("success")
-                .contextLength(context.length())
-                .messageType(messageType)
-                .emotionTag(emotionTag)
+                .context(context.length())
                 .message(aiMessage)
-                .suggestions(suggestions)
-                .metadata(metadata)
                 .sentAt(LocalDateTime.now())
                 .build();
     }
@@ -492,12 +418,10 @@ public class NotificationPushServiceImpl implements NotificationPushService {
         pref.setEnableAppointmentNotify(true);
         pref.setEnableGoalRemind(true);
         pref.setEnableAiCare(true);
-        pref.setEnableCommunityNotify(true);
         pref.setQuietStartTime(LocalTime.of(22, 0));   // 免打扰开始 22:00
         pref.setQuietEndTime(LocalTime.of(8, 0));     // 免打扰结束 08:00
         pref.setMutedUntil(null);
         pref.setDailySummaryTime(LocalTime.of(21, 0));  // 每日总结推送 21:00
-        pref.setMaxDailyPushCount(50);                  // 每日默认最多50条
         pref.setCreateTime(LocalDateTime.now());
         preferenceMapper.insert(pref);
         return pref;
@@ -529,8 +453,6 @@ public class NotificationPushServiceImpl implements NotificationPushService {
                 return Boolean.TRUE.equals(pref.getEnableGoalRemind());
             case "AI_CARE":
                 return Boolean.TRUE.equals(pref.getEnableAiCare());
-            case "COMMUNITY":
-                return Boolean.TRUE.equals(pref.getEnableCommunityNotify());
             default:
                 return true;  // 其他类型默认放行
         }
@@ -658,34 +580,14 @@ public class NotificationPushServiceImpl implements NotificationPushService {
     }
 
     private NotificationItemVO convertToItemVO(SysNotification n) {
-        String iconType = resolveIconType(n.getType());
         return NotificationItemVO.builder()
                 .notificationId(n.getId())
                 .type(n.getType())
-                .iconType(iconType)
                 .title(n.getTitle())
-                .summary(truncate(n.getContent(), 60))
-                .content(n.getContent())
-                .actionUrl(n.getActionUrl())
+                .content(truncate(n.getContent(), 80))
                 .isRead(n.getIsRead() == 1)
-                .expireAt(n.getExpireAt())
                 .createTime(n.getCreateTime())
                 .build();
-    }
-
-    /**
-     * 根据通知类型解析对应的图标标识
-     */
-    private String resolveIconType(String type) {
-        if (type == null) return "bell";
-        switch (type) {
-            case "APPOINTMENT": return "calendar";
-            case "GOAL": return "star";
-            case "COMMUNITY": return "chat";
-            case "AI_CARE": return "heart";
-            case "REMINDER": return "clock";
-            default: return "bell";
-        }
     }
 
     private NotificationPreferenceVO convertToPreferenceVO(NotificationPreference p) {
@@ -694,12 +596,10 @@ public class NotificationPushServiceImpl implements NotificationPushService {
                 .enableAppointmentNotify(p.getEnableAppointmentNotify())
                 .enableGoalRemind(p.getEnableGoalRemind())
                 .enableAiCare(p.getEnableAiCare())
-                .enableCommunityNotify(p.getEnableCommunityNotify())
                 .quietStartTime(p.getQuietStartTime())
                 .quietEndTime(p.getQuietEndTime())
                 .mutedUntil(p.getMutedUntil())
                 .dailySummaryTime(p.getDailySummaryTime())
-                .maxDailyPushCount(p.getMaxDailyPushCount())
                 .build();
     }
 
@@ -720,58 +620,6 @@ public class NotificationPushServiceImpl implements NotificationPushService {
     private String truncate(String text, int maxLength) {
         if (text == null) return "";
         if (text.length() <= maxLength) return text;
-        return text.substring(0, maxLength) + "...";
-    }
-
-    /**
-     * 按指定数量减少未读数缓存（用于批量标记已读场景）
-     */
-    private void decrementUnreadCacheByCount(Long userId, int count) {
-        String key = UNREAD_COUNT_KEY + userId;
-        Long current = stringRedisTemplate.opsForValue().get(key) != null
-                ? Long.parseLong(stringRedisTemplate.opsForValue().get(key)) : 0L;
-        long newValue = Math.max(0, current - count);
-        stringRedisTemplate.opsForValue().set(key, String.valueOf(newValue), 24, TimeUnit.HOURS);
-    }
-
-    /**
-     * 根据当前时间确定AI关怀消息类型
-     */
-    private String determineMessageType(LocalTime now) {
-        if (now.isBefore(LocalTime.of(11, 0))) {
-            return "ENCOURAGEMENT";      // 上午：鼓励型消息
-        } else if (now.isBefore(LocalTime.of(17, 0))) {
-            return "TIP";                // 下午：实用小贴士
-        } else {
-            return "BREATHING";          // 晚上：放松引导
-        }
-    }
-
-    /**
-     * 根据消息类型构建附带建议列表
-     */
-    private List<String> buildCareSuggestions(String messageType) {
-        switch (messageType) {
-            case "ENCOURAGEMENT":
-                return Arrays.asList("尝试记录一件今天值得感恩的小事", "做3次深呼吸，感受空气进入身体");
-            case "TIP":
-                return Arrays.asList("每小时站起来活动5分钟", "喝一杯温水，保持身体水分充足");
-            case "BREATHING":
-                return Arrays.asList("4-7-8呼吸法：吸气4秒、屏息7秒、呼气8秒", "播放一段白噪音或轻音乐");
-            default:
-                return Arrays.asList("关注当下，允许自己有情绪波动");
-        }
-    }
-
-    /**
-     * 根据上下文数据简单分析情绪标签
-     */
-    private String analyzeEmotionTag(String context) {
-        // 基于关键词的简单情绪识别，实际生产环境应使用NLP模型
-        if (context.contains("焦虑") || context.contains("紧张")) return "anxious";
-        if (context.contains("难过") || context.contains("低落")) return "sad";
-        if (context.contains("压力")) return "stressed";
-        if (context.contains("开心") || context.contains("满足")) return "hopeful";
-        return "neutral";
+        return text.substring(0,maxLength) + "...";
     }
 }

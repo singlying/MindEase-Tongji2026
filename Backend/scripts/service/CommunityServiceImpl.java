@@ -62,11 +62,6 @@ public class CommunityServiceImpl implements CommunityService {
             checkSensitiveContent(postDTO.getTitle());
         }
 
-        // 内容长度限制检查
-        if (postDTO.getContent() != null && postDTO.getContent().length() > 10000) {
-            throw new BaseException("帖子内容不能超过10000字");
-        }
-
         // 构建实体
         CommunityPost post = new CommunityPost();
         BeanUtils.copyProperties(postDTO, post);
@@ -74,19 +69,10 @@ public class CommunityServiceImpl implements CommunityService {
         post.setAnonymous(postDTO.getIsAnonymous() != null ? postDTO.getIsAnonymous() : false);
         post.setViewCount(0L);
         post.setLikeCount(0);
-        post.setCollectCount(0);
         post.setCommentCount(0);
-        post.setIsPinned(false);
-        // 新用户发布的前3篇帖子需要审核
-        boolean needsReview = isFirstTimePoster(userId);
-        post.setStatus(needsReview ? "PENDING_REVIEW" : "PUBLISHED");
+        post.setStatus("PUBLISHED");
         post.setCreateTime(LocalDateTime.now());
         post.setUpdateTime(LocalDateTime.now());
-
-        // 处理封面图
-        if (postDTO.getCoverImage() != null && !postDTO.getCoverImage().isEmpty()) {
-            post.setCoverImage(postDTO.getCoverImage());
-        }
 
         // 处理标签JSON
         if (postDTO.getTags() != null && !postDTO.getTags().isEmpty()) {
@@ -105,7 +91,7 @@ public class CommunityServiceImpl implements CommunityService {
         // 更新热门话题缓存
         refreshHotTopicsCache(postDTO.getTags());
 
-        log.info("帖子发布成功, ID: {}, 状态: {}", post.getId(), post.getStatus());
+        log.info("帖子发布成功, ID: {}", post.getId());
 
         return convertToPostVO(post);
     }
@@ -136,7 +122,7 @@ public class CommunityServiceImpl implements CommunityService {
     }
 
     @Override
-    public CommunityPostDetailVO getPostDetail(Long postId, Long currentUserId) {
+    public CommunityPostDetailVO getPostDetail(Long postId) {
         log.info("获取帖子详情, postId={}", postId);
 
         CommunityPost post = communityPostMapper.selectById(postId);
@@ -156,27 +142,14 @@ public class CommunityServiceImpl implements CommunityService {
         // 解析标签
         List<String> tags = parseTagsJson(post.getTagsJson());
 
-        // 查询当前用户与该帖子的交互状态（是否点赞、收藏）
-        boolean isLiked = false;
-        boolean isCollected = false;
-        if (currentUserId != null) {
-            isLiked = communityLikeMapper.existsByUserAndPost(currentUserId, postId) > 0;
-            isCollected = communityLikeMapper.existsCollectByUserAndPost(currentUserId, postId) > 0;
-        }
-
         return CommunityPostDetailVO.builder()
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .coverImage(post.getCoverImage())
                 .tags(tags)
                 .authorName(post.getIsAnonymous() ? "匿名用户" : post.getAuthorNickname())
                 .viewCount(getViewCountFromCache(postId))
                 .likeCount(post.getLikeCount())
-                .collectCount(post.getCollectCount())
-                .isPinned(post.getIsPinned())
-                .isCollected(isCollected)
-                .isLiked(isLiked)
                 .commentCount(post.getCommentCount())
                 .createTime(post.getCreateTime())
                 .comments(commentItems)
@@ -285,107 +258,6 @@ public class CommunityServiceImpl implements CommunityService {
         }
 
         log.info("内容删除成功");
-        return true;
-    }
-
-    @Override
-    public CommunityLikeVO toggleCollect(Long postId, Long userId) {
-        log.info("切换收藏状态, postId={}, userId={}", postId, userId);
-
-        String redisKey = COMMUNITY_LIKE_KEY + "collect:" + postId + ":" + userId;
-        Boolean isCollected = stringRedisTemplate.hasKey(redisKey);
-        if (isCollected == null || !isCollected) {
-            isCollected = communityLikeMapper.existsCollectByUserAndPost(userId, postId) > 0;
-        }
-
-        if (isCollected) {
-            communityLikeMapper.deleteCollectByUserAndPost(userId, postId);
-            communityPostMapper.decrementCollectCount(postId);
-            stringRedisTemplate.delete(redisKey);
-            log.info("取消收藏成功, postId={}, userId={}", postId, userId);
-        } else {
-            CommunityLike collectRecord = new CommunityLike();
-            collectRecord.setUserId(userId);
-            collectRecord.setTargetId(postId);
-            collectRecord.setTargetType("COLLECT");
-            collectRecord.setCreateTime(LocalDateTime.now());
-            communityLikeMapper.insert(collectRecord);
-            communityPostMapper.incrementCollectCount(postId);
-            stringRedisTemplate.opsForValue().set(redisKey, "collected", 30, TimeUnit.DAYS);
-            log.info("收藏成功, postId={}, userId={}", postId, userId);
-        }
-
-        CommunityPost updated = communityPostMapper.selectById(postId);
-        return CommunityLikeVO.builder()
-                .postId(postId)
-                .isLiked(!isCollected)
-                .likeCount(updated.getCollectCount())
-                .build();
-    }
-
-    @Override
-    public Boolean togglePinPost(Long postId, Long userId) {
-        log.info("切换置顶状态, postId={}, userId={}", postId);
-
-        CommunityPost post = communityPostMapper.selectById(postId);
-        if (post == null || !"PUBLISHED".equals(post.getStatus())) {
-            throw new BaseException("帖子不存在或已删除");
-        }
-
-        // 仅管理员或作者本人可以置顶（此处简化为仅作者）
-        if (!post.getUserId().equals(userId)) {
-            throw new BaseException("只有作者才能置顶自己的帖子");
-        }
-
-        boolean newPinStatus = !Boolean.TRUE.equals(post.getIsPinned());
-        communityPostMapper.togglePin(postId, newPinStatus);
-
-        log.info("置顶状态更新为: {}", newPinStatus);
-        return newPinStatus;
-    }
-
-    @Override
-    public Boolean reportContent(Long targetId, Long userId, String type, String reason) {
-        log.info("举报内容, targetId={}, userId={}, type={}, reason={}", targetId, userId, type, reason);
-
-        if (reason == null || reason.trim().isEmpty()) {
-            throw new BaseException("请提供举报原因");
-        }
-        if (reason.length() > 500) {
-            throw new BaseException("举报原因不能超过500字");
-        }
-
-        // 验证目标内容存在
-        if ("post".equalsIgnoreCase(type)) {
-            CommunityPost post = communityPostMapper.selectById(targetId);
-            if (post == null) {
-                throw new BaseException("被举报的帖子不存在");
-            }
-        } else if ("comment".equalsIgnoreCase(type)) {
-            CommunityComment comment = communityCommentMapper.selectById(targetId);
-            if (comment == null) {
-                throw new BaseException("被举报的评论不存在");
-            }
-        } else {
-            throw new BaseException("无效的举报类型");
-        }
-
-        // 记录举报信息到Redis有序集合，按时间排序供管理员审核
-        String reportKey = "mindease:community:reports";
-        try {
-            String reportData = objectMapper.writeValueAsString(new HashMap<String, Object>() {{
-                put("targetId", targetId);
-                put("type", type);
-                put("reporterId", userId);
-                put("reason", reason.trim());
-                put("reportTime", LocalDateTime.now().toString());
-            }});
-            stringRedisTemplate.opsForZSet().add(reportKey, reportData, System.currentTimeMillis());
-        } catch (JsonProcessingException e) {
-            log.error("举报数据序列化失败", e);
-        }
-
-        log.info("举报已提交, 等待管理员审核");
         return true;
     }
 
@@ -580,13 +452,5 @@ public class CommunityServiceImpl implements CommunityService {
         if (content == null) return "";
         if (content.length() <= maxLength) return content;
         return content.substring(0, maxLength) + "...";
-    }
-
-    /**
-     * 判断是否为新用户首次发帖（前3篇需审核）
-     */
-    private boolean isFirstTimePoster(Long userId) {
-        Integer publishedCount = communityPostMapper.countByUserId(userId);
-        return publishedCount != null && publishedCount < 3;
     }
 }
