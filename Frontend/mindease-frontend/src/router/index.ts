@@ -20,8 +20,10 @@ const router = createRouter({
       path: "/",
       name: "Layout",
       component: () => import("@/components/layout/MainLayout.vue"),
+      // 不设置固定的redirect，由路由守卫根据角色动态重定向
       meta: { requiresAuth: true },
       children: [
+        // ============ 用户端路由 ============
         {
           path: "/home",
           name: "Home",
@@ -44,7 +46,7 @@ const router = createRouter({
           path: "/ai-chat",
           name: "AIChat",
           component: () => import("@/views/user/chat/AIChatView.vue"),
-          meta: { title: "AI 咨询", role: "user" },
+          meta: { title: "AI咨询", role: "user" },
         },
         {
           path: "/assessment",
@@ -111,6 +113,8 @@ const router = createRouter({
           component: () => import("@/views/user/meditation/MeditationView.vue"),
           meta: { title: "冥想时刻", role: "user" },
         },
+
+        // ============ 咨询师端路由 ============
         {
           path: "/counselor/dashboard",
           name: "CounselorDashboard",
@@ -123,6 +127,8 @@ const router = createRouter({
           component: () => import("@/views/counselor/AuditPendingView.vue"),
           meta: { title: "待审核", role: "counselor" },
         },
+
+        // ============ 管理员端路由 ============
         {
           path: "/admin/dashboard",
           name: "AdminDashboard",
@@ -134,66 +140,117 @@ const router = createRouter({
   ],
 });
 
-const getDefaultPath = (role?: string, status?: number) => {
-  const normalizedRole = role?.toUpperCase();
-  if (normalizedRole === "COUNSELOR") {
-    return status === 2 ? "/counselor/audit-pending" : "/counselor/dashboard";
-  }
-  if (normalizedRole === "ADMIN") {
-    return "/admin/dashboard";
-  }
-  return "/home";
-};
-
-router.beforeEach(async (to) => {
+// 路由守卫
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
 
+  console.log("[Router Guard] 进入路由守卫", {
+    from: from.path,
+    to: to.path,
+    isLoggedIn: userStore.isLoggedIn,
+    userInfo: userStore.userInfo
+      ? {
+          role: userStore.userInfo.role,
+          status: userStore.userInfo.status,
+        }
+      : null,
+  });
+
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-    return "/login";
+    console.log("[Router Guard] 需要登录，跳转到/login");
+    next("/login");
+    return;
   }
 
-  if (userStore.isLoggedIn && !userStore.userInfo) {
-    try {
-      await userStore.fetchUserInfo();
-    } catch (_error) {
-      userStore.logout();
-      return "/login";
+  // 最高优先级：待审核咨询师权限控制（受限Token机制）
+  if (userStore.isLoggedIn && userStore.userInfo) {
+    const { role, status } = userStore.userInfo;
+    console.log("[Router Guard] 检查用户信息", {
+      role,
+      status,
+      targetPath: to.path,
+    });
+
+    // 待审核咨询师只能访问审核相关页面
+    if (role?.toUpperCase() === "COUNSELOR" && status === 2) {
+      const allowedPaths = [
+        "/counselor/audit-pending",
+        "/login",
+        "/register",
+        "/profile",
+      ];
+
+      if (!allowedPaths.includes(to.path)) {
+        console.log(
+          "[路由守卫] 待审核咨询师尝试访问受限页面，强制跳转到审核页面",
+          to.path
+        );
+        next("/counselor/audit-pending");
+        return;
+      }
+    }
+
+    // 已审核咨询师不应访问待审核页面
+    if (role?.toUpperCase() === "COUNSELOR" && status === 1) {
+      if (to.path === "/counselor/audit-pending") {
+        console.log("[路由守卫] 已审核咨询师尝试访问待审核页面，跳转到工作台");
+        next("/counselor/dashboard");
+        return;
+      }
     }
   }
 
-  const userInfo = userStore.userInfo;
-  if (!userInfo) {
-    return true;
-  }
-
-  const userRole = userInfo.role?.toUpperCase();
-  const targetRole = (to.meta.role as string | undefined)?.toUpperCase();
-
-  if (userRole === "COUNSELOR" && userInfo.status === 2) {
-    const allowedPaths = [
-      "/counselor/audit-pending",
-      "/login",
-      "/register",
-      "/profile",
-    ];
-
-    if (!allowedPaths.includes(to.path)) {
-      return "/counselor/audit-pending";
-    }
-  }
-
+  // 已登录用户访问登录/注册页或根路径，根据角色和状态重定向
   if (
-    (to.path === "/" || to.path === "/login" || to.path === "/register") &&
+    (to.path === "/login" || to.path === "/register" || to.path === "/") &&
     userStore.isLoggedIn
   ) {
-    return getDefaultPath(userInfo.role, userInfo.status);
+    const userInfo = userStore.userInfo;
+
+    // 咨询师根据状态跳转
+    if (userInfo?.role?.toUpperCase() === "COUNSELOR") {
+      if (userInfo.status === 2) {
+        next("/counselor/audit-pending");
+      } else {
+        next("/counselor/dashboard");
+      }
+    } else if (userInfo?.role?.toUpperCase() === "ADMIN") {
+      next("/admin/dashboard");
+    } else {
+      next("/home");
+    }
+    return;
   }
 
-  if (targetRole && targetRole !== userRole) {
-    return getDefaultPath(userInfo.role, userInfo.status);
+  // 防止不同角色访问其他角色的页面
+  if (userStore.isLoggedIn && userStore.userInfo) {
+    const userRole = userStore.userInfo.role?.toUpperCase();
+    const targetRole = to.meta.role as string;
+
+    // 如果路由指定了role，检查是否匹配
+    if (targetRole && targetRole.toUpperCase() !== userRole) {
+      // 角色不匹配，重定向到对应的首页
+      console.log("[路由守卫] 角色不匹配，重定向", {
+        userRole,
+        targetRole,
+        targetPath: to.path,
+      });
+      if (userRole === "COUNSELOR") {
+        if (userStore.userInfo.status === 2) {
+          next("/counselor/audit-pending");
+        } else {
+          next("/counselor/dashboard");
+        }
+      } else if (userRole === "ADMIN") {
+        next("/admin/dashboard");
+      } else {
+        next("/home");
+      }
+      return;
+    }
   }
 
-  return true;
+  next();
 });
 
 export default router;

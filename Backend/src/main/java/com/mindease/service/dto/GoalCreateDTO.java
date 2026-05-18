@@ -1,9 +1,8 @@
-package com.mindease.service.dto;
+package com.mindease.pojo.dto;
 
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 
 /**
  * 目标创建DTO

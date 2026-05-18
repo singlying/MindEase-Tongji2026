@@ -1,4 +1,4 @@
-package com.mindease.service.dto;
+package com.mindease.pojo.dto;
 
 import lombok.Data;
 import java.time.LocalDateTime;
