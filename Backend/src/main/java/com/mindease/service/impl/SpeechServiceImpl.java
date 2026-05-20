@@ -16,14 +16,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.util.List;
 import java.util.Locale;
 
 @Service
 @Slf4j
 public class SpeechServiceImpl implements SpeechService {
-
-    private static final List<String> SUPPORTED_ASR_FORMATS = List.of("webm", "wav", "mp3", "mp4", "ogg");
 
     @Value("${langchain4j.community.dashscope.chat-model.api-key:${DASHSCOPE_API_KEY:}}")
     private String apiKey;
@@ -48,16 +45,13 @@ public class SpeechServiceImpl implements SpeechService {
         validateApiKey();
 
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Audio file is required");
+            throw new IllegalArgumentException("闊抽鏂囦欢涓嶈兘涓虹┖");
         }
-
-        String audioFormat = resolveFormat(file.getOriginalFilename(), file.getContentType());
-        validateAsrFormat(audioFormat);
 
         RecognitionParam param = RecognitionParam.builder()
                 .apiKey(apiKey)
                 .model(asrModel)
-                .format(audioFormat)
+                .format(resolveFormat(file.getOriginalFilename(), file.getContentType()))
                 .sampleRate(16000)
                 .build();
 
@@ -71,13 +65,13 @@ public class SpeechServiceImpl implements SpeechService {
         }
 
         if (text == null || text.isBlank()) {
-            throw new IllegalStateException("Speech transcription returned empty text");
+            throw new IllegalStateException("璇煶杞啓缁撴灉涓虹┖");
         }
 
         SpeechTranscriptionVO vo = new SpeechTranscriptionVO();
         vo.setText(text.trim());
         vo.setAudioUrl(null);
-        vo.setFormat(audioFormat);
+        vo.setFormat(resolveFormat(file.getOriginalFilename(), file.getContentType()));
         return vo;
     }
 
@@ -86,7 +80,7 @@ public class SpeechServiceImpl implements SpeechService {
         validateApiKey();
 
         if (text == null || text.trim().isEmpty()) {
-            throw new IllegalArgumentException("Text is required for speech synthesis");
+            throw new IllegalArgumentException("鏂囨湰涓嶈兘涓虹┖");
         }
 
         SpeechSynthesisParam param = SpeechSynthesisParam.builder()
@@ -100,8 +94,8 @@ public class SpeechServiceImpl implements SpeechService {
 
         SpeechSynthesizer synthesizer = new SpeechSynthesizer();
         ByteBuffer buffer = synthesizer.call(param);
-        if (buffer == null || !buffer.hasRemaining()) {
-            throw new IllegalStateException("Speech synthesis returned empty audio");
+        if (buffer == null) {
+            throw new IllegalStateException("璇煶鍚堟垚杩斿洖涓虹┖");
         }
 
         byte[] audioBytes = new byte[buffer.remaining()];
@@ -124,7 +118,7 @@ public class SpeechServiceImpl implements SpeechService {
         try {
             return SpeechSynthesisAudioFormat.valueOf(format.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            log.warn("Unsupported TTS format {}, falling back to MP3", format);
+            log.warn("鏈煡璇煶鏍煎紡 {}, 鍥為€€涓?MP3", format);
             return SpeechSynthesisAudioFormat.MP3;
         }
     }
@@ -153,15 +147,9 @@ public class SpeechServiceImpl implements SpeechService {
         return ".webm";
     }
 
-    private void validateAsrFormat(String format) {
-        if (!SUPPORTED_ASR_FORMATS.contains(format)) {
-            throw new IllegalArgumentException("Unsupported audio format: " + format);
-        }
-    }
-
     private void validateApiKey() {
         if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("DashScope API key is not configured");
+            throw new IllegalStateException("DashScope API Key 鏈厤缃?");
         }
     }
 }
