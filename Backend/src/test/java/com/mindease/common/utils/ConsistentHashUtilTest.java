@@ -13,6 +13,14 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * 一致性哈希工具类 {@link ConsistentHashUtil} 的单元测试。
+ *
+ * <p>测试覆盖：空环行为、单节点、多节点路由一致性、节点动态添加/删除的迁移情况、
+ * 边界条件（长 key、空 key、哈希环绕、虚拟节点数量为 0/1 等）以及大批量 key 的一致性保证。
+ *
+ * <p>默认每个物理节点对应 5 个虚拟节点，由 {@link BeforeEach} 初始化。
+ */
 @DisplayName("ConsistentHashUtil 单元测试")
 class ConsistentHashUtilTest {
 
@@ -80,7 +88,6 @@ class ConsistentHashUtilTest {
             hashUtil.addNode("server-2");
             hashUtil.addNode("server-3");
 
-            // 多次调用返回相同结果
             String firstResult = hashUtil.getNode("user-42");
             for (int i = 0; i < 100; i++) {
                 assertEquals(firstResult, hashUtil.getNode("user-42"),
@@ -95,7 +102,6 @@ class ConsistentHashUtilTest {
             hashUtil.addNode("server-2");
             hashUtil.addNode("server-3");
 
-            // 用 100 个不同的 key 测试分布
             Set<String> reachedNodes = new HashSet<>();
             for (int i = 0; i < 100; i++) {
                 String node = hashUtil.getNode("user-" + i);
@@ -103,7 +109,6 @@ class ConsistentHashUtilTest {
                 reachedNodes.add(node);
             }
 
-            // 所有节点都应被访问到
             assertTrue(reachedNodes.size() >= 2,
                     "100 个 key 应分布到至少两个节点，实际: " + reachedNodes.size());
         }
@@ -139,9 +144,7 @@ class ConsistentHashUtilTest {
                 }
             }
 
-            // 至少有一些 key 迁移到新节点
             assertTrue(migratedCount > 0, "添加节点后应有 key 被重新路由");
-            // 但不应全部迁移
             assertTrue(migratedCount < 1000, "不应所有 key 都迁移");
         }
 
@@ -212,7 +215,6 @@ class ConsistentHashUtilTest {
             hashUtil.addNode("node-X");
             hashUtil.addNode("node-Y");
 
-            // 不论 key 的 hash 落在哪里，都应该返回非 null 的有效节点
             String[] keys = {
                     "aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc",
                     "ZZZZZZZZZZ", "0000000000", "~~~~~~~~~~",
@@ -261,7 +263,6 @@ class ConsistentHashUtilTest {
 
             assertNotNull(singleVirtualHash.getNode("test-key"));
 
-            // 一致性验证
             String first = singleVirtualHash.getNode("key-A");
             for (int i = 0; i < 50; i++) {
                 assertEquals(first, singleVirtualHash.getNode("key-A"));
@@ -284,7 +285,6 @@ class ConsistentHashUtilTest {
             hashUtil.addNode("dup-server");
             assertDoesNotThrow(() -> hashUtil.addNode("dup-server"));
             assertDoesNotThrow(() -> hashUtil.addNode("dup-server"));
-            // 即使多次添加，获取 key 也不应抛异常
             assertNotNull(hashUtil.getNode("some-key"));
         }
 
@@ -292,7 +292,6 @@ class ConsistentHashUtilTest {
         @DisplayName("删除未添加的节点不抛异常")
         void shouldNotThrowWhenRemovingNonExistentNode() {
             assertDoesNotThrow(() -> hashUtil.removeNode("ghost-server"));
-            // 状态应不变
             assertNull(hashUtil.getNode("any-key"));
         }
 

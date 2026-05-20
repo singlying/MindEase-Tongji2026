@@ -8,14 +8,14 @@ import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * AES-256-GCM 加解密工具类 {@link AesEncryptUtil} 的单元测试。
+ *
+ * <p>测试环境说明：不启动 Spring 容器时，{@code actualSecretKey} 不会被 {@code @PostConstruct} 初始化，
+ * 工具类会回退到默认密钥 {@code DEFAULT_SECRET_KEY}（"MindEase2024SecretKey32Bytes!!"，32 字节，满足 AES-256 要求）。
+ */
 @DisplayName("AesEncryptUtil 单元测试 (AES-256-GCM)")
 class AesEncryptUtilTest {
-
-    /**
-     * 由于不启动 Spring 容器，actualSecretKey 不会被 @PostConstruct 初始化，
-     * AesEncryptUtil.getSecretKey() 会回退到 DEFAULT_SECRET_KEY，
-     * 即 "MindEase2024SecretKey32Bytes!!"（32字节，满足 AES-256 要求）。
-     */
 
     // ==================== 加解密往返测试 ====================
 
@@ -144,7 +144,7 @@ class AesEncryptUtilTest {
             String plaintext = "Hello";
             String cipher = AesEncryptUtil.encrypt(plaintext);
 
-            // Base64 编码后的密文应远大于原文（12字节IV + 密文 + 16字节GCM标签）
+            // Base64 编码后的密文远大于原文（12字节IV + 密文 + 16字节GCM标签）
             assertTrue(cipher.length() > plaintext.length(),
                     "密文长度应大于明文长度");
         }
@@ -223,11 +223,7 @@ class AesEncryptUtilTest {
         @Test
         @DisplayName("使用其他密钥加密的密文无法被本工具解密")
         void shouldFailToDecryptCiphertextFromDifferentKey() {
-            // 模拟用不同密钥加密的结果
-            String foreignCipher = AesEncryptUtil.encrypt("test");
-            // 因为 DEFAULT_SECRET_KEY 是固定的，这里我们只能验证同一个密钥的往返
-            // 实际上由于密钥不同，真实场景下解密会失败
-            // 这里我们用篡改密文来模拟
+            // 模拟用不同密钥加密的结果（实际依赖默认密钥，这里用篡改密文模拟）
             String cipher = AesEncryptUtil.encrypt("test");
 
             // 修改密文中间的一个字符（模拟内容损坏）
