@@ -1,18 +1,18 @@
 <!--
   组件名称: MoodCard - 情绪日记卡片
-
+  
   功能说明:
   - 展示单条情绪日记的摘要信息
   - 显示日期、emoji、内容摘要、标签、评分
   - 支持点击事件跳转到详情页
-
+  
   使用示例:
   <MoodCard :mood="diaryItem" @click="viewDetail" />
-
+  
   Props:
   - mood: 日记数据对象 (MoodLogItem, 必填)
   - showActions: 是否显示操作按钮 (boolean, 默认: false)
-
+  
   Emits:
   - click: 点击卡片时触发，参数为日记ID
   - edit: 点击编辑按钮时触发 (需showActions=true)

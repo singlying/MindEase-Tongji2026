@@ -1,27 +1,27 @@
 <!--
   组件名称: EmptyState - 空状态占位
-
+  
   功能说明:
   - 显示数据为空时的占位界面
   - 展示图标、标题、描述信息
   - 支持通过插槽添加自定义操作按钮
-
+  
   使用示例:
-  <EmptyState
-    icon="fas fa-book"
-    title="还没有日记"
+  <EmptyState 
+    icon="fas fa-book" 
+    title="还没有日记" 
     description="开始记录你的第一篇日记吧"
   >
     <template #action>
       <button @click="create">创建日记</button>
     </template>
   </EmptyState>
-
+  
   Props:
   - icon: FontAwesome图标类名 (string, 默认: "fas fa-inbox")
   - title: 标题文字 (string, 默认: "暂无数据")
   - description: 描述文字 (string, 默认: "这里还没有任何内容")
-
+  
   Slots:
   - action: 自定义操作区域，如按钮等
 -->
