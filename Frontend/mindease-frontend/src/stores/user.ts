@@ -1,6 +1,6 @@
 // 用户状态管理
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import type { UserInfo } from "@/api/auth";
 import { getUserProfile } from "@/api/auth";
 
@@ -13,19 +13,6 @@ export const useUserStore = defineStore("user", () => {
 
   // 是否已登录
   const isLoggedIn = ref<boolean>(!!token.value);
-
-  // 兼容阶段性页面中使用的简化用户资料字段
-  const profile = computed(() => {
-    if (!userInfo.value) {
-      return null;
-    }
-
-    return {
-      nickname: userInfo.value.nickname,
-      role: userInfo.value.role.toUpperCase(),
-      counselorStatus: userInfo.value.status === 2 ? "PENDING" : "APPROVED",
-    };
-  });
 
   // 设置 Token
   const setToken = (newToken: string) => {
@@ -62,7 +49,6 @@ export const useUserStore = defineStore("user", () => {
 
   return {
     userInfo,
-    profile,
     token,
     isLoggedIn,
     setToken,
