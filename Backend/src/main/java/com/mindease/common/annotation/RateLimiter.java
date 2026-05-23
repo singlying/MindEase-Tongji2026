@@ -16,9 +16,22 @@ import java.util.concurrent.TimeUnit;
  *
  * <h3>使用示例（未来接入切面后）：</h3>
  * <pre>{@code
+ * // 基础限流：每分钟最多 10 次请求
  * @RateLimiter(limit = 10, window = 60)
  * @PostMapping("/login")
  * public Result<?> login(@RequestBody LoginDTO dto) { ... }
+ *
+ * // 令牌桶模式：支持短时突发
+ * @RateLimiter(limit = 5, window = 60, burst = 3)
+ * @GetMapping("/search")
+ * public Result<?> search(@RequestParam String q) { ... }
+ *
+ * // 被限流时返回自定义提示 + HTTP 429 状态码
+ * @RateLimiter(limit = 2, window = 300,
+ *               message = "发送过于频繁，请 5 分钟后再试",
+ *               fallback = FallbackAction.REJECT_WITH_CODE)
+ * @PostMapping("/sms/send")
+ * public Result<?> sendSms(@RequestBody SmsRequest req) { ... }
  * }</pre>
  *
  * <h3>安全说明：</h3>
@@ -69,4 +82,40 @@ public @interface RateLimiter {
      * @return 自定义提示，默认 "操作过于频繁，请稍后再试"
      */
     String message() default "操作过于频繁，请稍后再试";
+
+    /**
+     * 突发容量（令牌桶模式下的 burst 上限）
+     * <p>设为 0 或与 limit 相等则退化为固定窗口计数器。</p>
+     *
+     * @return 突发请求数，默认 0（不启用突发）
+     */
+    int burst() default 0;
+
+    /**
+     * 被限流时的降级行为策略
+     *
+     * @return 降级处理方式
+     */
+    FallbackAction fallback() default FallbackAction.REJECT;
+
+    /**
+     * 是否对管理员角色豁免限流
+     *
+     * @return true 则 ADMIN 角色不受此限制约束
+     */
+    boolean adminBypass() default false;
+
+    /**
+     * 降级行为枚举
+     */
+    enum FallbackAction {
+        /** 直接拒绝请求，返回错误消息 */
+        REJECT,
+        /** 拒绝并在响应头中设置 Retry-After / HTTP 429 */
+        REJECT_WITH_CODE,
+        /** 放行但记录告警日志 */
+        WARN_AND_PASS,
+        /** 进入排队等待（异步场景适用） */
+        QUEUE_AND_WAIT,
+    }
 }

@@ -15,9 +15,22 @@ import java.lang.annotation.Target;
  *
  * <h3>使用示例（未来接入切面后）：</h3>
  * <pre>{@code
+ * // 基础审计日志
  * @LogAction(action = "删除用户", module = "用户管理")
  * @DeleteMapping("/users/{id}")
  * public Result<?> deleteUser(@PathVariable Long id) { ... }
+ *
+ * // 敏感操作 + 不记录参数
+ * @LogAction(action = "修改密码", module = "账户安全",
+ *            recordParams = false, level = AuditLevel.HIGH)
+ * @PutMapping("/password")
+ * public Result<?> changePassword(@RequestBody PwdDTO dto) { ... }
+ *
+ * // 排除特定敏感字段
+ * @LogAction(action = "导出报告", module = "数据分析",
+ *            excludeParams = {"token", "sessionKey"})
+ * @GetMapping("/reports/export")
+ * public void exportReport(HttpServletResponse resp) { ... }
  * }</pre>
  *
  * <h3>安全说明：</h3>
@@ -64,6 +77,22 @@ public @interface LogAction {
     LogStore store() default LogStore.DATABASE;
 
     /**
+     * 审计级别，用于区分普通操作与高风险敏感操作
+     *
+     * @return 审计等级
+     */
+    AuditLevel level() default AuditLevel.NORMAL;
+
+    /**
+     * 排除的参数字段名列表
+     * <p>当 {@link #recordParams()} 为 true 时，
+     * 此列表中的字段将被脱敏或省略。</p>
+     *
+     * @return 需排除的参数名数组
+     */
+    String[] excludeParams() default {};
+
+    /**
      * 日志存储策略枚举
      */
     enum LogStore {
@@ -73,5 +102,19 @@ public @interface LogAction {
         FILE,
         /** 同时存入数据库和输出到文件 */
         BOTH
+    }
+
+    /**
+     * 审计级别枚举
+     */
+    enum AuditLevel {
+        /** 普通操作（浏览、查询等） */
+        LOW,
+        /** 一般操作（常规增删改） */
+        NORMAL,
+        /** 敏感操作（密码变更、支付、权限调整等） */
+        HIGH,
+        /** 高危操作（批量删除、数据导出、配置变更等） */
+        CRITICAL
     }
 }

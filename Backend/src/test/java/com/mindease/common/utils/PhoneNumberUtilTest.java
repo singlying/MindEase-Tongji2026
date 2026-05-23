@@ -263,5 +263,75 @@ class PhoneNumberUtilTest {
                 }
             });
         }
+
+        @Test
+        @DisplayName("批量脱敏处理均返回正确长度")
+        void batchMaskingConsistentLength() {
+            String[] phones = {"13987654321", "15800001111", "18612345678", "19987654321"};
+            for (String p : phones) {
+                assertEquals(11, maskPhone(p).length());
+            }
+        }
+
+        @Test
+        @DisplayName("批量运营商识别覆盖全部已知号段")
+        void batchCarrierDetectionCoverage() {
+            java.util.Map<String, String> expected = new java.util.HashMap<>();
+            expected.put("134", "中国移动");
+            expected.put("130", "中国联通");
+            expected.put("189", "中国电信");
+            expected.put("174", "卫星通信");
+
+            for (var entry : expected.entrySet()) {
+                assertEquals(entry.getValue(),
+                        extractCarrier(entry.getKey() + "00000000"));
+            }
+        }
+    }
+
+    // ==================== 号段归属地辅助测试 ====================
+
+    @Nested
+    @DisplayName("号段归属与格式一致性")
+    class FormatConsistencyTests {
+
+        @Test
+        @DisplayName("所有合法号段生成的掩码均含 ****")
+        void allValidMasksContainAsterisks() {
+            String[] prefixes = {"130", "140", "150", "165", "170", "180", "190", "199"};
+            for (String p : prefixes) {
+                assertTrue(maskPhone(p + "12345678").contains("****"),
+                        p + " 掩码应包含 ****");
+            }
+        }
+
+        @Test
+        @DisplayName("运营商识别结果不包含空字符串")
+        void carrierNeverReturnsEmpty() {
+            String[] testPhones = {"13800138000", "13012345678", "18912345678",
+                                   "17401234567", "17012345678"};
+            for (String phone : testPhones) {
+                String carrier = extractCarrier(phone);
+                assertNotNull(carrier);
+                assertFalse(carrier.isEmpty());
+            }
+        }
+
+        @Test
+        @DisplayName("同一手机号的掩码结果具有确定性")
+        void maskingIsDeterministic() {
+            String phone = "15912345678";
+            String mask1 = maskPhone(phone);
+            String mask2 = maskPhone(phone);
+            assertEquals(mask1, mask2, "相同输入应始终产生相同的掩码输出");
+        }
+
+        @Test
+        @DisplayName("纯数字字符串但长度不为 11 位时拒绝")
+        void numericButWrongLengthRejected() {
+            assertFalse(isValidPhone("1234567"));       // 太短
+            assertFalse(isValidPhone("123456789012"));   // 太长
+            assertFalse(isValidPhone("12345678901"));    // 12位
+        }
     }
 }
