@@ -334,7 +334,7 @@
                 :motion-cue="displayedAgentMotionCue"
                 :motion-seed="displayedAgentMotionSeed"
               />
-              <div class="motion-debug-panel">
+              <div v-if="showMotionDebugPanel" class="motion-debug-panel">
                 <span class="motion-debug-label">动作调试</span>
                 <div class="motion-debug-buttons">
                   <button
@@ -553,6 +553,7 @@ let mediaRecorder: MediaRecorder | null = null;
 let recordingChunks: Blob[] = [];
 let currentAudio: HTMLAudioElement | null = null;
 let responseMotionTimer: number | null = null;
+const showMotionDebugPanel = import.meta.env.DEV;
 
 const inferEmotionFromText = (
   content: string,
