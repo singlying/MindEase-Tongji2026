@@ -169,10 +169,7 @@ public class ChatServiceImpl implements ChatService {
         if (content == null) {
             return "";
         }
-        return content
-                .replaceFirst("^\\s*\\[\\[MOTION:(neutral|concern|encouragement|surprise|shy)\\]\\]\\s*", "")
-                .replaceAll("\\s*\\[\\[MOTION:(neutral|concern|encouragement|surprise|shy)\\]\\]\\s*", "\n")
-                .trim();
+        return content.replaceFirst("^\\s*\\[\\[MOTION:(neutral|concern|encouragement|surprise|shy)\\]\\]\\s*", "");
     }
 
     @Override
