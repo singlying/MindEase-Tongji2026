@@ -1,19 +1,19 @@
 <!--
   组件名称: MoodTrendChart - 情绪趋势图表
-  
+
   功能说明:
   - 使用ECharts展示情绪趋势折线图
   - 支持显示7天或30天的情绪变化
   - 自动响应数据变化重新渲染
   - 组件销毁时自动清理图表实例
-  
+
   使用示例:
   <MoodTrendChart :data="trendData" height="400px" />
-  
+
   Props:
   - data: 趋势数据数组 (MoodTrendItem[], 必填)
   - height: 图表高度 (string, 默认: "300px")
-  
+
   数据格式:
   MoodTrendItem { date: string; score: number; moodType: string }
 -->

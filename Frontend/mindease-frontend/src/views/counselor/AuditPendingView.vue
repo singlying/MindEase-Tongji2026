@@ -210,7 +210,7 @@
             <!-- ⚠️ 【临时测试】直接输入图片URL（后期删除） -->
             <el-input
               v-model="auditForm.qualificationUrl"
-              placeholder="临时测试：直接输入图片URL"
+              placeholder="请输入资格证明图片 URL"
               class="temp-url-input"
             >
               <template #prepend>测试URL</template>
@@ -244,7 +244,7 @@
             <!-- ⚠️ 【临时测试】直接输入图片URL（后期删除） -->
             <el-input
               v-model="auditForm.idCardUrl"
-              placeholder="临时测试：直接输入图片URL（可选）"
+              placeholder="请输入身份证明图片 URL（可选）"
               class="temp-url-input"
             >
               <template #prepend>测试URL</template>
