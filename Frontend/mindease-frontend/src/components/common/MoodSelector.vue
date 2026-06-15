@@ -1,18 +1,18 @@
 <!--
   组件名称: MoodSelector - 情绪选择器
-
+  
   功能说明:
   - 展示7种情绪类型供用户选择
   - 支持v-model双向绑定选中值
   - 展示情绪emoji和中文名称
-
+  
   使用示例:
   <MoodSelector v-model="formData.moodType" label="今天的心情？" />
-
+  
   Props:
   - modelValue: 当前选中的情绪类型 (MoodType | null)
   - label: 标签文字 (string, 默认: "今天的心情是？")
-
+  
   Emits:
   - update:modelValue: 选中情绪变化时触发
 -->

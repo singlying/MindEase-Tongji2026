@@ -1,15 +1,15 @@
 <!--
   组件名称: LoadingSpinner - 加载动画
-
+  
   功能说明:
   - 显示旋转的加载动画
   - 支持全屏或局部显示
   - 可自定义加载文字
-
+  
   使用示例:
   <LoadingSpinner text="数据加载中..." />
   <LoadingSpinner fullscreen />
-
+  
   Props:
   - text: 加载提示文字 (string, 默认: "加载中...")
   - fullscreen: 是否全屏显示 (boolean, 默认: false)
