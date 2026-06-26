@@ -66,12 +66,6 @@ export interface SensitiveWordCheckVO {
   originalText: string;
 }
 
-export interface SpeechTranscriptionVO {
-  text: string;
-  audioUrl: string;
-  format: string;
-}
-
 // ========== DTO类型定义 ==========
 
 /**
@@ -162,41 +156,4 @@ export const checkSensitiveWords = (dto: ChatMessageSendDTO) => {
     "/chat/check-sensitive-words",
     dto
   );
-};
-
-export const transcribeAudio = async (file: Blob): Promise<SpeechTranscriptionVO> => {
-  const formData = new FormData();
-  formData.append("file", file, "speech.webm");
-
-  const response = (await request.post(
-    "/chat/asr",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  )) as any;
-
-  return response.data as SpeechTranscriptionVO;
-};
-
-export const synthesizeSpeech = async (text: string): Promise<Blob> => {
-  const token = localStorage.getItem("token");
-  const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
-  const response = await fetch(`${baseURL}/chat/tts`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      token: token || "",
-    },
-    body: JSON.stringify({ text }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  return await response.blob();
 };
