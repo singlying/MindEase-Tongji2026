@@ -18,6 +18,27 @@
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      (function loadCubismCore() {
+        var primary = "https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js";
+        var fallback = "https://cdn.jsdelivr.net/npm/live2dcubismcore@1.0.2/live2dcubismcore.min.js";
+
+        function appendScript(src, onError) {
+          var script = document.createElement("script");
+          script.src = src;
+          script.async = false;
+          if (onError) {
+            script.onerror = onError;
+          }
+          document.head.appendChild(script);
+        }
+
+        appendScript(primary, function () {
+          console.warn("Failed to load Cubism Core from official CDN, trying fallback CDN.");
+          appendScript(fallback);
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

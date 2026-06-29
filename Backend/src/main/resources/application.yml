@@ -17,7 +17,7 @@ spring:
       max-file-size: 10MB
 
 server:
-  port: 8080
+  port: 8081
 
 mybatis:
   configuration:
